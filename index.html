@@ -1284,7 +1284,10 @@
         function loadLetterForEditing(letterId) {
             const letter = groupLetters.find((l) => l.id === letterId);
             if (!letter) return;
-
+            if (!isCurrentUserAuthor(letter)) {
+        showToast('Możesz edytować tylko swój własny list.', 'warning');
+        return;
+            }
             editingLetterId = letter.id;
             letterFormState = {
                 interests: Array.isArray(letter.interests) ? [...letter.interests] : [],
@@ -1822,14 +1825,16 @@
                                     >
                                         <i data-lucide="copy" class="w-4 h-4"></i>
                                     </button>
-                                    <button
-                                        type="button"
-                                        data-edit-letter="${safeText(letter.id)}"
-                                        title="Edytuj list"
-                                        class="edit-letter-item-btn p-2 rounded-xl border border-stone-200 text-stone-600 hover:text-berry-700 hover:bg-berry-600/10 transition"
-                                    >
-                                        <i data-lucide="pencil" class="w-4 h-4"></i>
-                                    </button>
+                                    ${isOwn ? `
+                                        <button
+                                            type="button"
+                                            data-edit-letter="${safeText(letter.id)}"
+                                            title="Edytuj list"
+                                            class="edit-letter-item-btn p-2 rounded-xl border border-stone-200 text-stone-600 hover:text-berry-700 hover:bg-berry-600/10 transition"
+                                        >
+                                            <i data-lucide="pencil" class="w-4 h-4"></i>
+                                        </button>
+                                    ` : ''}
                                 </div>
                             </div>
 
