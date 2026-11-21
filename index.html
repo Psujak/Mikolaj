@@ -117,10 +117,10 @@
         <!-- 1. GÓRNY PASEK GRUPY I TOŻSAMOŚCI -->
         <section class="card-surface rounded-3xl p-4 sm:p-6 mb-5">
             <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 pb-4 border-b border-stone-200/80">
-                <!-- Nazwa grupy oraz akcje linku / nowej grupy -->
+                <!-- Nazwa grupy oraz status -->
                 <div class="flex-1 min-w-0">
                     <div class="flex flex-wrap items-center gap-2 mb-1.5">
-                        <span class="text-[11px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-pine-800/10 text-pine-900">
+                        <span id="group-mode-badge" class="text-[11px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-pine-800/10 text-pine-900">
                             Aktywna grupa
                         </span>
                         <span id="group-code-badge" class="text-xs font-mono px-2.5 py-0.5 rounded-full bg-parchment-200 text-stone-700 border border-stone-300/80">
@@ -132,7 +132,8 @@
                         </span>
                     </div>
 
-                    <div class="flex flex-col sm:flex-row sm:items-center gap-2 mt-2">
+                    <!-- Tryb założyciela: możliwość edycji nazwy grupy -->
+                    <div id="group-name-editor-row" class="flex flex-col sm:flex-row sm:items-center gap-2 mt-2">
                         <input
                             type="text"
                             id="group-name-input"
@@ -149,9 +150,16 @@
                             <span>Zapisz nazwę</span>
                         </button>
                     </div>
+
+                    <!-- Tryb zaproszenia: czysta nazwa grupy bez ryzyka nadpisania -->
+                    <div id="group-name-readonly-row" class="hidden mt-2">
+                        <h2 id="group-name-display" class="font-serif text-xl sm:text-2xl font-bold text-pine-950">
+                            Świąteczna Grupa
+                        </h2>
+                    </div>
                 </div>
 
-                <!-- Przyciski linku grupy i tworzenia nowej grupy -->
+                <!-- Przycisk kopiowania linku oraz (tylko w trybie gospodarza) tworzenia nowej grupy -->
                 <div class="flex flex-wrap items-center gap-2.5 shrink-0">
                     <button
                         type="button"
@@ -361,7 +369,7 @@
                         <div>
                             <h2 class="font-serif text-xl sm:text-2xl font-bold text-pine-950">O czym marzę w tym roku</h2>
                             <p class="text-xs sm:text-sm text-stone-600 mt-0.5">
-                                Konkretne pomysły prezentowe — możesz dodać kolor, rozmiar, link lub orientacyjny budżet w PLN.
+                                Konkretne pomysły prezentowe — możesz dodać kolor, rozmiar lub link.
                             </p>
                         </div>
                     </div>
@@ -485,6 +493,20 @@
                 <!-- Renderowane przez JS -->
             </div>
         </section>
+
+        <!-- DYSKRETNA STOPKA Z OPCJĄ ZAŁOŻENIA OSOBNEJ GRUPY (DLA ZAPROSZONYCH GOŚCI) -->
+        <footer id="invited-footer-bar" class="hidden mt-8 pt-4 border-t border-parchment-100/15 text-center">
+            <p class="text-xs text-parchment-100/65">
+                Chcesz stworzyć osobną grupę prezentową dla innej rodziny lub znajomych?
+                <button
+                    type="button"
+                    id="footer-new-group-btn"
+                    class="underline decoration-gold-400/70 text-gold-300 hover:text-gold-400 font-semibold ml-1 transition"
+                >
+                    Załóż nową grupę
+                </button>
+            </p>
+        </footer>
     </div>
 
     <!-- MODAL TWORZENIA NOWEJ GRUPY -->
@@ -550,9 +572,6 @@
         // ==========================================
         // 1. STAŁE KONFIGURACYJNE I SŁOWNIKI
         // ==========================================
-        // Jeśli wrzucasz plik na własny hosting (np. GitHub Pages, Netlify, Vercel)
-        // i chcesz, aby link działał zewnętrznie dla innych osób — wklej tutaj swoje dane
-        // z projektu w konsoli (apiKey, authDomain, projectId, storageBucket, messagingSenderId, appId).
         const MANUAL_FIREBASE_CONFIG = {
             apiKey: 'AIzaSyBCV614Wihjc1UIEKwWLEiOCGw2xv5JZDE',
             authDomain: 'swiateczny-mikolaja.firebaseapp.com',
@@ -607,6 +626,7 @@
         let unsubscribeGroupMeta = null;
         let unsubscribeLetters = null;
 
+        let isInvitedLinkMode = detectInvitedLinkMode();
         let currentGroupId = resolveGroupIdFromUrl();
         let currentGroupMeta = {
             id: currentGroupId,
@@ -618,7 +638,6 @@
         let activeTab = 'write';
         let editingLetterId = null;
 
-        // Stan formularza „Mój list do Mikołaja”
         let letterFormState = {
             interests: [],
             categories: [],
@@ -626,10 +645,7 @@
             dreams: []
         };
 
-        // Lista dokumentów w bieżącej grupie
         let groupLetters = [];
-
-        // Prywatne notatki użytkownika dla zaklepanych prezentów (klucz: `${letterId}::${itemId}`)
         let privateClaimNotes = loadPrivateNotesFromStorage(currentGroupId);
 
         // ==========================================
@@ -659,6 +675,19 @@
                 code += chars.charAt(Math.floor(Math.random() * chars.length));
             }
             return code;
+        }
+
+        function detectInvitedLinkMode() {
+            try {
+                const url = new URL(window.location.href);
+                const paramGroup = url.searchParams.get('grupa') || url.searchParams.get('group');
+                if (paramGroup && paramGroup.trim()) return true;
+                const hashMatch = window.location.hash.match(/grupa=([a-zA-Z0-9_-]+)/);
+                if (hashMatch && hashMatch[1]) return true;
+            } catch (e) {
+                // Ignoruj błędy parsowania URL
+            }
+            return false;
         }
 
         function resolveGroupIdFromUrl() {
@@ -965,6 +994,7 @@
             const name = input ? input.value.trim() : '';
             const newCode = generateGroupCode();
             closeNewGroupModal();
+            isInvitedLinkMode = false;
             showToast(`Tworzę nową grupę: ${name || newCode}...`, 'info');
             await initFirebaseAndGroup(newCode, name || 'Nowa Świąteczna Grupa');
             showToast('Utworzono nową grupę i wygenerowano nowy link!', 'success');
@@ -1211,7 +1241,6 @@
                 return;
             }
 
-            // Automatycznie ustaw tożsamość autora, jeśli nie była jeszcze ustawiona
             if (!currentIdentityName) {
                 currentIdentityName = payload.authorName;
                 saveIdentityToStorage(currentGroupId, currentIdentityName);
@@ -1221,7 +1250,6 @@
 
             const docId = editingLetterId || `letter-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
 
-            // Zachowaj ewentualne rezerwacje na już istniejących marzeniach przy edycji
             if (editingLetterId) {
                 const existing = groupLetters.find((l) => l.id === editingLetterId);
                 if (existing && Array.isArray(existing.dreams)) {
@@ -1428,11 +1456,35 @@
         }
 
         function renderGroupHeader() {
+            const modeBadge = getEl('group-mode-badge');
             const codeBadge = getEl('group-code-badge');
+            const editorRow = getEl('group-name-editor-row');
+            const readonlyRow = getEl('group-name-readonly-row');
+            const nameDisplay = getEl('group-name-display');
             const nameInput = getEl('group-name-input');
+            const topNewGroupBtn = getEl('open-new-group-modal-btn');
+            const invitedFooter = getEl('invited-footer-bar');
+
+            const groupName = currentGroupMeta.name || 'Świąteczna Grupa';
+
             if (codeBadge) codeBadge.textContent = `kod: ${currentGroupId}`;
+            if (nameDisplay) nameDisplay.textContent = groupName;
             if (nameInput && document.activeElement !== nameInput) {
-                nameInput.value = currentGroupMeta.name || '';
+                nameInput.value = groupName;
+            }
+
+            if (isInvitedLinkMode) {
+                if (modeBadge) modeBadge.textContent = 'Zaproszenie do grupy';
+                if (editorRow) editorRow.classList.add('hidden');
+                if (readonlyRow) readonlyRow.classList.remove('hidden');
+                if (topNewGroupBtn) topNewGroupBtn.classList.add('hidden');
+                if (invitedFooter) invitedFooter.classList.remove('hidden');
+            } else {
+                if (modeBadge) modeBadge.textContent = 'Aktywna grupa';
+                if (editorRow) editorRow.classList.remove('hidden');
+                if (readonlyRow) readonlyRow.classList.add('hidden');
+                if (topNewGroupBtn) topNewGroupBtn.classList.remove('hidden');
+                if (invitedFooter) invitedFooter.classList.add('hidden');
             }
         }
 
@@ -1667,7 +1719,6 @@
                     return `<span class="px-2.5 py-1 rounded-full bg-berry-600/10 text-berry-800 text-xs font-medium">${safeText(label)}</span>`;
                 }).join('');
 
-                // Blok wymarzonych prezentów: dla autora ukrywa stan zaklepania, aby zachować niespodziankę
                 let dreamsBlockHtml = '';
                 if (!letter.dreams || !letter.dreams.length) {
                     dreamsBlockHtml = `<p class="text-xs text-stone-500 italic">Brak wpisanych konkretnych prezentów.</p>`;
@@ -1675,7 +1726,7 @@
                     dreamsBlockHtml = `
                         <div class="mb-2.5 px-3 py-2 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-950 flex items-center gap-2">
                             <i data-lucide="eye-off" class="w-4 h-4 shrink-0 text-amber-700"></i>
-                            <span>Statusy zaklepania są ukryte na Twoim liście, aby nie psuć świątecznej niespodzianki.</span>
+                            <span>To Twój list — nie możesz rezerwować własnych prezentów, a statusy zaklepania są ukryte, aby nie psuć niespodzianki.</span>
                         </div>
                         <ul class="space-y-2">
                             ${letter.dreams.map((d) => `
@@ -1691,7 +1742,6 @@
                         </ul>
                     `;
                 } else {
-                    // Widok dla pozostałych uczestników grupy
                     dreamsBlockHtml = `
                         <ul class="space-y-2">
                             ${letter.dreams.map((d) => `
@@ -1711,7 +1761,6 @@
                     `;
                 }
 
-                // Tajne pomysły spoza listy: widoczne tylko dla innych obdarowujących (nigdy dla autora listu)
                 let secretIdeasHtml = '';
                 if (!isOwn) {
                     const existingSecretItems = (letter.extraIdeas || []).map((idea) => `
@@ -1869,7 +1918,6 @@
                 return;
             }
 
-            // Zbierz wszystkie prezenty (z marzeń oraz tajnych pomysłów) zaklepane przez bieżącego użytkownika
             const groupedByRecipient = new Map();
             let totalItemsCount = 0;
 
@@ -2072,14 +2120,16 @@
                 });
             }
 
-            // Modal nowej grupy
+            // Modal nowej grupy (przycisk górny oraz dyskretny link w stopce)
             const openNewGroupBtn = getEl('open-new-group-modal-btn');
+            const footerNewGroupBtn = getEl('footer-new-group-btn');
             const closeNewGroupBtn = getEl('close-new-group-modal-btn');
             const cancelNewGroupBtn = getEl('cancel-new-group-btn');
             const confirmNewGroupBtn = getEl('confirm-create-group-btn');
             const newGroupNameInput = getEl('new-group-name-input');
 
             if (openNewGroupBtn) openNewGroupBtn.addEventListener('click', openNewGroupModal);
+            if (footerNewGroupBtn) footerNewGroupBtn.addEventListener('click', openNewGroupModal);
             if (closeNewGroupBtn) closeNewGroupBtn.addEventListener('click', closeNewGroupModal);
             if (cancelNewGroupBtn) cancelNewGroupBtn.addEventListener('click', closeNewGroupModal);
             if (confirmNewGroupBtn) confirmNewGroupBtn.addEventListener('click', createNewGroupFromModal);
