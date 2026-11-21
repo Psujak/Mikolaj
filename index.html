@@ -1000,16 +1000,30 @@
             showToast('Utworzono nową grupę i wygenerowano nowy link!', 'success');
         }
 
-        function setUserIdentity(rawName) {
+            function setUserIdentity(rawName) {
             const cleaned = String(rawName ?? '').trim();
+        
+            if (currentIdentityName && cleaned && normalizeName(cleaned) !== normalizeName(currentIdentityName)) {
+                const isTakenByOtherAuthor = groupLetters.some(
+                    (l) => l.authorName && normalizeName(l.authorName) === normalizeName(cleaned)
+                );
+                if (isTakenByOtherAuthor) {
+                    showToast('Nie możesz przełączyć się na imię innej osoby z grupy.', 'warning');
+                    isIdentityEditing = false;
+                    renderIdentityBar();
+                    return;
+                }
+            }
+        
             currentIdentityName = cleaned;
+            isIdentityEditing = false;
             saveIdentityToStorage(currentGroupId, cleaned);
-
+        
             const identityInput = getEl('identity-input');
             if (identityInput) identityInput.value = cleaned;
-
+        
             if (cleaned) {
-                showToast(`Przedstawiasz się teraz jako: ${cleaned}`, 'success');
+                showToast(`Zapisano tożsamość: ${cleaned}`, 'success');
             } else {
                 showToast('Wyczyszczono tożsamość w tej grupie.', 'info');
             }
