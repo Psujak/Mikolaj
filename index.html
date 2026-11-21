@@ -181,31 +181,42 @@
             </div>
 
             <!-- Wybór / wpisanie tożsamości uczestnika w grupie -->
-            <div class="pt-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+            <div class="pt-4 flex flex-col md:flex-row md:items-start md:justify-between gap-3">
                 <div class="flex flex-col sm:flex-row sm:items-center gap-2.5 flex-1">
                     <label for="identity-input" class="text-xs sm:text-sm font-bold text-pine-950 flex items-center gap-1.5 shrink-0">
                         <i data-lucide="user-check" class="w-4 h-4 text-berry-600"></i>
                         <span>Kim jesteś w tej grupie?</span>
                     </label>
-                    <div class="flex flex-1 flex-col sm:flex-row gap-2">
-                        <input
-                            type="text"
-                            id="identity-input"
-                            list="group-members-datalist"
-                            placeholder="Wpisz lub wybierz swoje imię..."
-                            class="flex-1 px-3.5 py-2 rounded-xl bg-white border border-stone-300 focus:border-pine-800 focus:ring-2 focus:ring-pine-800/20 outline-none text-sm text-stone-800 transition"
-                        >
-                        <datalist id="group-members-datalist"></datalist>
-                        <button
-                            type="button"
-                            id="save-identity-btn"
-                            class="px-4 py-2 rounded-xl bg-pine-900 hover:bg-pine-950 text-parchment-50 text-xs sm:text-sm font-semibold inline-flex items-center justify-center gap-1.5 transition shrink-0"
-                        >
-                            <span>Ustaw tożsamość</span>
-                        </button>
+                    <div class="flex-1">
+                        <div class="flex flex-col sm:flex-row gap-2">
+                            <input
+                                type="text"
+                                id="identity-input"
+                                list="group-members-datalist"
+                                placeholder="Wpisz lub wybierz swoje imię..."
+                                class="flex-1 px-3.5 py-2 rounded-xl bg-white border border-stone-300 focus:border-pine-800 focus:ring-2 focus:ring-pine-800/20 outline-none text-sm text-stone-800 read-only:bg-stone-100 read-only:text-stone-500 read-only:border-stone-200 read-only:cursor-not-allowed transition"
+                            >
+                            <datalist id="group-members-datalist"></datalist>
+                            <button
+                                type="button"
+                                id="save-identity-btn"
+                                class="px-4 py-2 rounded-xl bg-pine-900 hover:bg-pine-950 text-parchment-50 text-xs sm:text-sm font-semibold inline-flex items-center justify-center gap-1.5 transition shrink-0"
+                            >
+                                <span>Ustaw tożsamość</span>
+                            </button>
+                            <button
+                                type="button"
+                                id="edit-identity-btn"
+                                class="hidden px-4 py-2 rounded-xl bg-parchment-200 hover:bg-parchment-100 text-pine-950 border border-stone-300 text-xs sm:text-sm font-semibold inline-flex items-center justify-center gap-1.5 transition shrink-0"
+                            >
+                                <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
+                                <span>Edytuj tożsamość</span>
+                            </button>
+                        </div>
+                        <p id="identity-warning-text" class="hidden mt-1.5 text-xs font-medium text-berry-700"></p>
                     </div>
                 </div>
-                <p id="identity-helper-text" class="text-xs text-stone-600 md:text-right">
+                <p id="identity-helper-text" class="text-xs text-stone-600 md:text-right md:pt-2">
                     Twoja tożsamość chroni niespodzianki na Twoim własnym liście.
                 </p>
             </div>
@@ -635,6 +646,7 @@
         };
 
         let currentIdentityName = loadIdentityFromStorage(currentGroupId);
+        let isIdentityEditing = false;
         let activeTab = 'write';
         let editingLetterId = null;
 
@@ -853,6 +865,7 @@
                 currentGroupId = groupId;
                 syncGroupIdToUrl(groupId);
                 currentIdentityName = loadIdentityFromStorage(groupId);
+                isIdentityEditing = false;
                 privateClaimNotes = loadPrivateNotesFromStorage(groupId);
                 editingLetterId = null;
 
@@ -860,6 +873,7 @@
                 if (identityInput) {
                     identityInput.value = currentIdentityName;
                 }
+                setIdentityWarning('');
 
                 if (!firebaseApp) {
                     const parsedConfig = typeof rawFirebaseConfig === 'string'
@@ -1000,28 +1014,70 @@
             showToast('Utworzono nową grupę i wygenerowano nowy link!', 'success');
         }
 
-            function setUserIdentity(rawName) {
-            const cleaned = String(rawName ?? '').trim();
-        
-            if (currentIdentityName && cleaned && normalizeName(cleaned) !== normalizeName(currentIdentityName)) {
-                const isTakenByOtherAuthor = groupLetters.some(
-                    (l) => l.authorName && normalizeName(l.authorName) === normalizeName(cleaned)
-                );
-                if (isTakenByOtherAuthor) {
-                    showToast('Nie możesz przełączyć się na imię innej osoby z grupy.', 'warning');
-                    isIdentityEditing = false;
-                    renderIdentityBar();
-                    return;
-                }
+        function setIdentityWarning(message = '') {
+            const warningEl = getEl('identity-warning-text');
+            if (!warningEl) return;
+            if (message) {
+                warningEl.textContent = message;
+                warningEl.classList.remove('hidden');
+            } else {
+                warningEl.textContent = '';
+                warningEl.classList.add('hidden');
             }
-        
+        }
+
+        function isNameTakenByOtherAuthor(candidateName) {
+            const normCandidate = normalizeName(candidateName);
+            if (!normCandidate) return false;
+            if (currentIdentityName && normCandidate === normalizeName(currentIdentityName)) {
+                return false;
+            }
+            return groupLetters.some(
+                (l) => l.authorName && normalizeName(l.authorName) === normCandidate
+            );
+        }
+
+        function checkIdentityInputForExistingMember() {
+            const input = getEl('identity-input');
+            if (!input) return;
+            const val = input.value.trim();
+            if (isNameTakenByOtherAuthor(val)) {
+                setIdentityWarning(`Taki członek grupy już istnieje (${val}) — nie możesz ustawić cudzego imienia.`);
+            } else {
+                setIdentityWarning('');
+            }
+        }
+
+        function startEditingIdentity() {
+            isIdentityEditing = true;
+            setIdentityWarning('');
+            renderIdentityBar();
+            const identityInput = getEl('identity-input');
+            if (identityInput) {
+                identityInput.focus();
+                identityInput.setSelectionRange(identityInput.value.length, identityInput.value.length);
+            }
+            lucide.createIcons();
+        }
+
+        function setUserIdentity(rawName) {
+            const cleaned = String(rawName ?? '').trim();
+
+            if (cleaned && isNameTakenByOtherAuthor(cleaned)) {
+                setIdentityWarning(`Taki członek grupy już istnieje (${cleaned}) — nie możesz ustawić cudzego imienia.`);
+                const identityInput = getEl('identity-input');
+                if (identityInput) identityInput.focus();
+                return;
+            }
+
+            setIdentityWarning('');
             currentIdentityName = cleaned;
             isIdentityEditing = false;
             saveIdentityToStorage(currentGroupId, cleaned);
-        
+
             const identityInput = getEl('identity-input');
             if (identityInput) identityInput.value = cleaned;
-        
+
             if (cleaned) {
                 showToast(`Zapisano tożsamość: ${cleaned}`, 'success');
             } else {
@@ -1037,6 +1093,11 @@
             const input = getEl('identity-input');
             const typed = input ? input.value.trim() : '';
             if (typed) {
+                if (isNameTakenByOtherAuthor(typed)) {
+                    setIdentityWarning(`Taki członek grupy już istnieje (${typed}) — nie możesz ustawić cudzego imienia.`);
+                    if (input) input.focus();
+                    return false;
+                }
                 setUserIdentity(typed);
                 return true;
             }
@@ -1256,7 +1317,13 @@
             }
 
             if (!currentIdentityName) {
+                if (isNameTakenByOtherAuthor(payload.authorName)) {
+                    setIdentityWarning(`Taki członek grupy już istnieje (${payload.authorName}) — nie możesz ustawić cudzego imienia.`);
+                    showToast('To imię należy już do innego uczestnika grupy.', 'warning');
+                    return;
+                }
                 currentIdentityName = payload.authorName;
+                isIdentityEditing = false;
                 saveIdentityToStorage(currentGroupId, currentIdentityName);
                 const identityEl = getEl('identity-input');
                 if (identityEl) identityEl.value = currentIdentityName;
@@ -1299,8 +1366,8 @@
             const letter = groupLetters.find((l) => l.id === letterId);
             if (!letter) return;
             if (!isCurrentUserAuthor(letter)) {
-        showToast('Możesz edytować tylko swój własny list.', 'warning');
-        return;
+                showToast('Możesz edytować tylko swój własny list.', 'warning');
+                return;
             }
             editingLetterId = letter.id;
             letterFormState = {
@@ -1508,6 +1575,9 @@
         function renderIdentityBar() {
             const datalist = getEl('group-members-datalist');
             const helperText = getEl('identity-helper-text');
+            const identityInput = getEl('identity-input');
+            const saveIdentityBtn = getEl('save-identity-btn');
+            const editIdentityBtn = getEl('edit-identity-btn');
 
             if (datalist) {
                 const namesSet = new Set();
@@ -1517,6 +1587,24 @@
                 datalist.innerHTML = Array.from(namesSet)
                     .map((n) => `<option value="${safeText(n)}"></option>`)
                     .join('');
+            }
+
+            const hasSavedIdentity = Boolean(currentIdentityName);
+            const showEditButton = hasSavedIdentity && !isIdentityEditing;
+            const isReadOnly = hasSavedIdentity && !isIdentityEditing;
+
+            if (identityInput) {
+                identityInput.readOnly = isReadOnly;
+                if (isReadOnly) {
+                    identityInput.value = currentIdentityName;
+                }
+            }
+
+            if (saveIdentityBtn) {
+                saveIdentityBtn.classList.toggle('hidden', showEditButton);
+            }
+            if (editIdentityBtn) {
+                editIdentityBtn.classList.toggle('hidden', !showEditButton);
             }
 
             if (helperText) {
@@ -2164,6 +2252,7 @@
             // Tożsamość w grupie
             const identityInput = getEl('identity-input');
             const saveIdentityBtn = getEl('save-identity-btn');
+            const editIdentityBtn = getEl('edit-identity-btn');
             if (identityInput && currentIdentityName) {
                 identityInput.value = currentIdentityName;
             }
@@ -2172,6 +2261,9 @@
                     setUserIdentity(identityInput ? identityInput.value : '');
                 });
             }
+            if (editIdentityBtn) {
+                editIdentityBtn.addEventListener('click', startEditingIdentity);
+            }
             if (identityInput) {
                 identityInput.addEventListener('keydown', (e) => {
                     if (e.key === 'Enter') {
@@ -2179,6 +2271,7 @@
                         setUserIdentity(identityInput.value);
                     }
                 });
+                identityInput.addEventListener('input', checkIdentityInputForExistingMember);
             }
 
             // Formularz listu
