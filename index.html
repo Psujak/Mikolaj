@@ -1,0 +1,2171 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>List do Świętego Mikołaja — Wspólny Pokój Prezentowy</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                        serif: ['Fraunces', 'Georgia', 'serif']
+                    },
+                    colors: {
+                        pine: {
+                            800: '#164236',
+                            900: '#0d2b23',
+                            950: '#071a15'
+                        },
+                        berry: {
+                            600: '#b8293d',
+                            700: '#941e2f',
+                            800: '#721523'
+                        },
+                        gold: {
+                            300: '#f5d78e',
+                            400: '#e8bd5a',
+                            500: '#cfa038'
+                        },
+                        parchment: {
+                            50: '#fffdf9',
+                            100: '#fbf6ec',
+                            200: '#f3ead8'
+                        }
+                    }
+                }
+            }
+        };
+    </script>
+    <style>
+        body {
+            background: radial-gradient(circle at top right, rgba(207, 160, 56, 0.14), transparent 45%),
+                        radial-gradient(circle at top left, rgba(184, 41, 61, 0.10), transparent 45%),
+                        #0d2b23;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        .snow-dot {
+            position: fixed;
+            top: -12px;
+            border-radius: 9999px;
+            background: rgba(255, 253, 249, 0.45);
+            pointer-events: none;
+            z-index: 0;
+            animation: snowfall linear infinite;
+        }
+        @keyframes snowfall {
+            0% {
+                transform: translateY(-10px) translateX(0);
+                opacity: 0;
+            }
+            15% {
+                opacity: 0.75;
+            }
+            85% {
+                opacity: 0.65;
+            }
+            100% {
+                transform: translateY(105vh) translateX(24px);
+                opacity: 0;
+            }
+        }
+        .card-surface {
+            background: rgba(255, 253, 249, 0.97);
+            box-shadow: 0 20px 45px -18px rgba(4, 18, 14, 0.55), 0 0 0 1px rgba(207, 160, 56, 0.25);
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(22, 66, 54, 0.25);
+            border-radius: 9999px;
+        }
+    </style>
+</head>
+<body class="text-stone-800 antialiased selection:bg-berry-600 selection:text-white">
+    <!-- Subtelne płatki śniegu w tle -->
+    <div id="snow-layer" aria-hidden="true"></div>
+
+    <!-- Kontener powiadomień (bez alert/confirm) -->
+    <div id="toast-container" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2 max-w-sm w-[calc(100vw-2rem)] pointer-events-none"></div>
+
+    <!-- Główna struktura strony -->
+    <div class="relative z-10 max-w-6xl mx-auto px-3 sm:px-6 py-4 sm:py-7">
+        <!-- Nagłówek świąteczny -->
+        <header class="text-center mb-5 sm:mb-7">
+            <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-pine-800/90 border border-gold-400/40 text-gold-300 text-xs font-semibold tracking-wide mb-3 shadow">
+                <span>🎄</span>
+                <span>Świąteczny Pokój Prezentowy</span>
+                <span>✨</span>
+            </div>
+            <h1 class="font-serif text-3xl sm:text-5xl font-bold text-parchment-50 tracking-tight drop-shadow">
+                List do Świętego Mikołaja
+            </h1>
+            <p class="text-parchment-100/85 text-sm sm:text-base max-w-2xl mx-auto mt-2 leading-relaxed">
+                Podziel się swoimi inspiracjami z bliskimi, zaklepuj prezenty bez dublowania i chroń niespodziankę aż do Wigilii.
+            </p>
+        </header>
+
+        <!-- 1. GÓRNY PASEK GRUPY I TOŻSAMOŚCI -->
+        <section class="card-surface rounded-3xl p-4 sm:p-6 mb-5">
+            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 pb-4 border-b border-stone-200/80">
+                <!-- Nazwa grupy oraz akcje linku / nowej grupy -->
+                <div class="flex-1 min-w-0">
+                    <div class="flex flex-wrap items-center gap-2 mb-1.5">
+                        <span class="text-[11px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-pine-800/10 text-pine-900">
+                            Aktywna grupa
+                        </span>
+                        <span id="group-code-badge" class="text-xs font-mono px-2.5 py-0.5 rounded-full bg-parchment-200 text-stone-700 border border-stone-300/80">
+                            kod: ...
+                        </span>
+                        <span id="sync-status-badge" class="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-900">
+                            <span class="w-2 h-2 rounded-full bg-emerald-600 animate-pulse"></span>
+                            <span>Łączenie z pokojem...</span>
+                        </span>
+                    </div>
+
+                    <div class="flex flex-col sm:flex-row sm:items-center gap-2 mt-2">
+                        <input
+                            type="text"
+                            id="group-name-input"
+                            aria-label="Nazwa grupy"
+                            placeholder="Nazwa grupy (np. Rodzinka 2026)"
+                            class="w-full sm:w-72 px-3.5 py-2 rounded-xl bg-white border border-stone-300 focus:border-pine-800 focus:ring-2 focus:ring-pine-800/20 outline-none text-sm font-semibold text-pine-950 transition"
+                        >
+                        <button
+                            type="button"
+                            id="save-group-name-btn"
+                            class="px-3.5 py-2 rounded-xl bg-pine-800 hover:bg-pine-900 text-parchment-50 text-xs sm:text-sm font-semibold inline-flex items-center justify-center gap-1.5 transition shadow-sm shrink-0"
+                        >
+                            <i data-lucide="check" class="w-4 h-4"></i>
+                            <span>Zapisz nazwę</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Przyciski linku grupy i tworzenia nowej grupy -->
+                <div class="flex flex-wrap items-center gap-2.5 shrink-0">
+                    <button
+                        type="button"
+                        id="copy-group-link-btn"
+                        class="flex-1 sm:flex-initial px-4 py-2.5 rounded-xl bg-gold-400 hover:bg-gold-500 text-pine-950 text-xs sm:text-sm font-bold inline-flex items-center justify-center gap-2 transition shadow-sm"
+                    >
+                        <i data-lucide="link" class="w-4 h-4"></i>
+                        <span>Kopiuj link dla tej grupy</span>
+                    </button>
+                    <button
+                        type="button"
+                        id="open-new-group-modal-btn"
+                        class="flex-1 sm:flex-initial px-4 py-2.5 rounded-xl bg-berry-600 hover:bg-berry-700 text-white text-xs sm:text-sm font-semibold inline-flex items-center justify-center gap-2 transition shadow-sm"
+                    >
+                        <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                        <span>Nowa grupa</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Wybór / wpisanie tożsamości uczestnika w grupie -->
+            <div class="pt-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                <div class="flex flex-col sm:flex-row sm:items-center gap-2.5 flex-1">
+                    <label for="identity-input" class="text-xs sm:text-sm font-bold text-pine-950 flex items-center gap-1.5 shrink-0">
+                        <i data-lucide="user-check" class="w-4 h-4 text-berry-600"></i>
+                        <span>Kim jesteś w tej grupie?</span>
+                    </label>
+                    <div class="flex flex-1 flex-col sm:flex-row gap-2">
+                        <input
+                            type="text"
+                            id="identity-input"
+                            list="group-members-datalist"
+                            placeholder="Wpisz lub wybierz swoje imię..."
+                            class="flex-1 px-3.5 py-2 rounded-xl bg-white border border-stone-300 focus:border-pine-800 focus:ring-2 focus:ring-pine-800/20 outline-none text-sm text-stone-800 transition"
+                        >
+                        <datalist id="group-members-datalist"></datalist>
+                        <button
+                            type="button"
+                            id="save-identity-btn"
+                            class="px-4 py-2 rounded-xl bg-pine-900 hover:bg-pine-950 text-parchment-50 text-xs sm:text-sm font-semibold inline-flex items-center justify-center gap-1.5 transition shrink-0"
+                        >
+                            <span>Ustaw tożsamość</span>
+                        </button>
+                    </div>
+                </div>
+                <p id="identity-helper-text" class="text-xs text-stone-600 md:text-right">
+                    Twoja tożsamość chroni niespodzianki na Twoim własnym liście.
+                </p>
+            </div>
+        </section>
+
+        <!-- 2. NAWIGACJA ZAKŁADEK -->
+        <nav aria-label="Zakładki aplikacji" class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 mb-6">
+            <button
+                type="button"
+                data-tab-btn="write"
+                class="tab-btn flex items-center justify-center gap-2 px-4 py-3.5 rounded-2xl font-semibold text-sm transition shadow"
+            >
+                <i data-lucide="feather" class="w-4 h-4"></i>
+                <span>Mój list do Mikołaja</span>
+            </button>
+
+            <button
+                type="button"
+                data-tab-btn="group"
+                class="tab-btn flex items-center justify-center gap-2 px-4 py-3.5 rounded-2xl font-semibold text-sm transition shadow"
+            >
+                <i data-lucide="users" class="w-4 h-4"></i>
+                <span>Zebrane listy w grupie</span>
+                <span id="group-letters-count" class="px-2 py-0.5 text-xs rounded-full bg-black/15 font-bold">0</span>
+            </button>
+
+            <button
+                type="button"
+                data-tab-btn="claimed"
+                class="tab-btn flex items-center justify-center gap-2 px-4 py-3.5 rounded-2xl font-semibold text-sm transition shadow"
+            >
+                <i data-lucide="gift" class="w-4 h-4"></i>
+                <span>Moje zaklepane</span>
+                <span id="my-claimed-count" class="px-2 py-0.5 text-xs rounded-full bg-black/15 font-bold">0</span>
+            </button>
+        </nav>
+
+        <!-- ZAKŁADKA 1: MÓJ LIST DO MIKOŁAJA -->
+        <main id="tab-write" class="tab-panel">
+            <form id="wish-letter-form" class="space-y-5" novalidate>
+                <!-- Karta Imienia -->
+                <section class="card-surface rounded-3xl p-5 sm:p-7">
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
+                        <div>
+                            <h2 class="font-serif text-xl sm:text-2xl font-bold text-pine-950 flex items-center gap-2">
+                                <span>🎅</span>
+                                <span>Podpis pod listem</span>
+                            </h2>
+                            <p class="text-xs sm:text-sm text-stone-600 mt-0.5">
+                                Po zapisaniu listu pod tym imieniem aplikacja automatycznie rozpozna Cię jako jego autora.
+                            </p>
+                        </div>
+                        <button
+                            type="button"
+                            id="clear-form-btn"
+                            class="self-start sm:self-auto px-3 py-1.5 rounded-xl text-xs font-semibold text-stone-600 hover:text-berry-700 hover:bg-berry-600/10 border border-stone-200 transition inline-flex items-center gap-1.5"
+                        >
+                            <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
+                            <span>Wyczyść pola</span>
+                        </button>
+                    </div>
+
+                    <div>
+                        <label for="author-name-input" class="block text-xs font-bold uppercase tracking-wider text-pine-900 mb-1.5">
+                            Twoje imię lub pseudonim *
+                        </label>
+                        <input
+                            type="text"
+                            id="author-name-input"
+                            placeholder="Np. Kasia, Tomek, Babcia Hania..."
+                            class="w-full sm:w-96 px-4 py-2.5 rounded-xl bg-white border border-stone-300 focus:border-pine-800 focus:ring-2 focus:ring-pine-800/20 outline-none text-sm font-medium text-stone-900 transition"
+                        >
+                    </div>
+                </section>
+
+                <!-- Sekcja 1: Zainteresowania -->
+                <section class="card-surface rounded-3xl p-5 sm:p-7">
+                    <div class="flex items-start gap-3 mb-4">
+                        <span class="w-8 h-8 rounded-xl bg-pine-800 text-gold-300 font-bold text-sm flex items-center justify-center shrink-0 mt-0.5">1</span>
+                        <div>
+                            <h2 class="font-serif text-xl sm:text-2xl font-bold text-pine-950">Zainteresowania i pasje</h2>
+                            <p class="text-xs sm:text-sm text-stone-600 mt-0.5">
+                                Zaznacz klimaty, które lubisz na co dzień, i dopisz kilka słów o tym, co Cię kręci.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div id="interests-tags-container" class="flex flex-wrap gap-2 mb-4">
+                        <!-- Renderowane przez JS -->
+                    </div>
+
+                    <div>
+                        <label for="interests-notes-input" class="block text-xs font-bold uppercase tracking-wider text-stone-500 mb-1.5">
+                            Więcej o moich zainteresowaniach
+                        </label>
+                        <textarea
+                            id="interests-notes-input"
+                            rows="2"
+                            placeholder="Np. Uwielbiam kryminały skandynawskie, wieczory z herbatą i spacery po lesie..."
+                            class="w-full px-4 py-2.5 rounded-xl bg-white border border-stone-300 focus:border-pine-800 focus:ring-2 focus:ring-pine-800/20 outline-none text-sm text-stone-800 transition"
+                        ></textarea>
+                    </div>
+                </section>
+
+                <!-- Sekcja 2: Z jakich dziedzin lubię dostawać prezenty (checkboxy + własna dziedzina) -->
+                <section class="card-surface rounded-3xl p-5 sm:p-7">
+                    <div class="flex items-start gap-3 mb-4">
+                        <span class="w-8 h-8 rounded-xl bg-berry-600 text-white font-bold text-sm flex items-center justify-center shrink-0 mt-0.5">2</span>
+                        <div>
+                            <h2 class="font-serif text-xl sm:text-2xl font-bold text-pine-950">Z jakich dziedzin lubię dostawać prezenty</h2>
+                            <p class="text-xs sm:text-sm text-stone-600 mt-0.5">
+                                Wybierz checkboxy z ulubionymi dziedzinami lub dopisz własną pozycję i od razu ją zaznacz.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div id="gift-categories-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-4">
+                        <!-- Renderowane przez JS -->
+                    </div>
+
+                    <!-- Dodawanie własnej dziedziny -->
+                    <div class="bg-parchment-100 border border-gold-400/50 rounded-2xl p-3.5 sm:p-4 mb-4">
+                        <label for="custom-category-input" class="block text-xs font-bold uppercase tracking-wider text-pine-950 mb-2">
+                            Dopisz własną dziedzinę prezentową
+                        </label>
+                        <div class="flex flex-col sm:flex-row gap-2.5">
+                            <input
+                                type="text"
+                                id="custom-category-input"
+                                placeholder="Np. Ceramika użytkowa, Akcesoria do parzenia kawy, Rośliny..."
+                                class="flex-1 px-3.5 py-2.5 rounded-xl bg-white border border-stone-300 focus:border-pine-800 focus:ring-2 focus:ring-pine-800/20 outline-none text-sm text-stone-800 transition"
+                            >
+                            <button
+                                type="button"
+                                id="add-custom-category-btn"
+                                class="px-4 py-2.5 rounded-xl bg-berry-600 hover:bg-berry-700 text-white text-sm font-semibold inline-flex items-center justify-center gap-1.5 transition shadow-sm shrink-0"
+                            >
+                                <i data-lucide="plus" class="w-4 h-4"></i>
+                                <span>Dodaj dziedzinę</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label for="categories-tip-input" class="block text-xs font-bold uppercase tracking-wider text-stone-500 mb-1.5">
+                            Podpowiedź do wybranych dziedzin (ulubione kolory, smaki, marki)
+                        </label>
+                        <input
+                            type="text"
+                            id="categories-tip-input"
+                            placeholder="Np. Wolę ciepłe odcienie ziemi, herbaty liściaste bez aromatu sztucznego..."
+                            class="w-full px-4 py-2.5 rounded-xl bg-white border border-stone-300 focus:border-pine-800 focus:ring-2 focus:ring-pine-800/20 outline-none text-sm text-stone-800 transition"
+                        >
+                    </div>
+                </section>
+
+                <!-- Sekcja 3: O czym marzę w tym roku -->
+                <section class="card-surface rounded-3xl p-5 sm:p-7">
+                    <div class="flex items-start gap-3 mb-4">
+                        <span class="w-8 h-8 rounded-xl bg-pine-800 text-gold-300 font-bold text-sm flex items-center justify-center shrink-0 mt-0.5">3</span>
+                        <div>
+                            <h2 class="font-serif text-xl sm:text-2xl font-bold text-pine-950">O czym marzę w tym roku</h2>
+                            <p class="text-xs sm:text-sm text-stone-600 mt-0.5">
+                                Konkretne pomysły prezentowe — możesz dodać kolor, rozmiar, link lub orientacyjny budżet w PLN.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="bg-parchment-100/90 border border-stone-200 rounded-2xl p-3.5 sm:p-4 mb-4">
+                        <div class="grid grid-cols-1 sm:grid-cols-12 gap-2.5">
+                            <div class="sm:col-span-6">
+                                <label for="dream-title-input" class="block text-[11px] font-bold uppercase tracking-wider text-stone-600 mb-1">
+                                    Nazwa prezentu
+                                </label>
+                                <input
+                                    type="text"
+                                    id="dream-title-input"
+                                    placeholder="Np. Ciepły koc wełniany"
+                                    class="w-full px-3.5 py-2.5 rounded-xl bg-white border border-stone-300 focus:border-pine-800 focus:ring-2 focus:ring-pine-800/20 outline-none text-sm text-stone-800 transition"
+                                >
+                            </div>
+                            <div class="sm:col-span-6">
+                                <label for="dream-details-input" class="block text-[11px] font-bold uppercase tracking-wider text-stone-600 mb-1">
+                                    Kolor / rozmiar / link (opcjonalnie)
+                                </label>
+                                <input
+                                    type="text"
+                                    id="dream-details-input"
+                                    placeholder="Np. Butelkowa zieleń, 150x200, https://..."
+                                    class="w-full px-3.5 py-2.5 rounded-xl bg-white border border-stone-300 focus:border-pine-800 focus:ring-2 focus:ring-pine-800/20 outline-none text-sm text-stone-800 transition"
+                                >
+                            </div>
+                        </div>
+                        <div class="mt-3 flex justify-end">
+                            <button
+                                type="button"
+                                id="add-dream-btn"
+                                class="px-4 py-2 rounded-xl bg-pine-800 hover:bg-pine-900 text-parchment-50 text-xs sm:text-sm font-semibold inline-flex items-center gap-1.5 transition shadow-sm"
+                            >
+                                <i data-lucide="plus" class="w-4 h-4"></i>
+                                <span>Dodaj marzenie do listy</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="dreams-list-container" class="space-y-2.5">
+                        <!-- Renderowane przez JS -->
+                    </div>
+                </section>
+
+                <!-- Sekcja 4: Czego mogę chcieć spróbować + Czego lepiej nie kupować -->
+                <section class="card-surface rounded-3xl p-5 sm:p-7">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        <div>
+                            <div class="flex items-center gap-2.5 mb-2">
+                                <span class="w-7 h-7 rounded-lg bg-gold-400 text-pine-950 font-bold text-xs flex items-center justify-center shrink-0">4</span>
+                                <label for="try-new-input" class="font-serif text-lg sm:text-xl font-bold text-pine-950">
+                                    Czego mogę chcieć spróbować
+                                </label>
+                            </div>
+                            <p class="text-xs text-stone-600 mb-2.5">
+                                Nowe doświadczenia, warsztaty, miejsca, aktywności lub smaki, których jeszcze nie znałem/am.
+                            </p>
+                            <textarea
+                                id="try-new-input"
+                                rows="3"
+                                placeholder="Np. Warsztaty pieczenia zakwasu, degustacja matcha, gra escape room, lekcja wspinaczki..."
+                                class="w-full px-4 py-2.5 rounded-xl bg-white border border-stone-300 focus:border-pine-800 focus:ring-2 focus:ring-pine-800/20 outline-none text-sm text-stone-800 transition"
+                            ></textarea>
+                        </div>
+
+                        <div>
+                            <div class="flex items-center gap-2.5 mb-2">
+                                <span class="w-7 h-7 rounded-lg bg-stone-200 text-stone-700 font-bold text-xs flex items-center justify-center shrink-0">!</span>
+                                <label for="avoid-input" class="font-serif text-lg sm:text-xl font-bold text-pine-950">
+                                    Czego lepiej nie kupować <span class="text-xs font-sans font-normal text-stone-500">(opcjonalnie)</span>
+                                </label>
+                            </div>
+                            <p class="text-xs text-stone-600 mb-2.5">
+                                Czego nie potrzebuję lub nie używam (np. alergie, nietrafione gadżety).
+                            </p>
+                            <textarea
+                                id="avoid-input"
+                                rows="3"
+                                placeholder="Np. Figurki zbierające kurz, perfumy z nutą wanilii, rzeczy w rozmiarze S..."
+                                class="w-full px-4 py-2.5 rounded-xl bg-white border border-stone-300 focus:border-pine-800 focus:ring-2 focus:ring-pine-800/20 outline-none text-sm text-stone-800 transition"
+                            ></textarea>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Przyciski akcji formularza -->
+                <div class="card-surface rounded-3xl p-4 sm:p-5 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+                    <button
+                        type="button"
+                        id="copy-letter-text-btn"
+                        class="px-5 py-3 rounded-2xl bg-parchment-200 hover:bg-parchment-100 text-pine-950 border border-stone-300 text-sm font-semibold inline-flex items-center justify-center gap-2 transition"
+                    >
+                        <i data-lucide="copy" class="w-4 h-4"></i>
+                        <span>Kopiuj treść listu</span>
+                    </button>
+
+                    <button
+                        type="submit"
+                        id="save-letter-btn"
+                        class="px-6 py-3.5 rounded-2xl bg-berry-600 hover:bg-berry-700 text-white text-sm font-bold inline-flex items-center justify-center gap-2 transition shadow-md"
+                    >
+                        <i data-lucide="send" class="w-4 h-4"></i>
+                        <span>Zapisz list w grupie</span>
+                    </button>
+                </div>
+            </form>
+        </main>
+
+        <!-- ZAKŁADKA 2: ZEBRANE LISTY W GRUPIE -->
+        <section id="tab-group" class="tab-panel hidden">
+            <div id="group-letters-container" class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <!-- Renderowane przez JS -->
+            </div>
+        </section>
+
+        <!-- ZAKŁADKA 3: MOJE ZAKLEPANE -->
+        <section id="tab-claimed" class="tab-panel hidden">
+            <div id="my-claimed-container" class="space-y-5">
+                <!-- Renderowane przez JS -->
+            </div>
+        </section>
+    </div>
+
+    <!-- MODAL TWORZENIA NOWEJ GRUPY -->
+    <div id="new-group-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/65 backdrop-blur-xs">
+        <div class="card-surface rounded-3xl max-w-md w-full p-6 relative">
+            <button
+                type="button"
+                id="close-new-group-modal-btn"
+                aria-label="Zamknij okno"
+                class="absolute top-4 right-4 p-2 rounded-xl text-stone-500 hover:text-stone-800 hover:bg-stone-100 transition"
+            >
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+
+            <h2 class="font-serif text-2xl font-bold text-pine-950 mb-1.5">Nowa grupa prezentowa</h2>
+            <p class="text-xs sm:text-sm text-stone-600 mb-4">
+                Utworzy świeży pokój z własnym linkiem, idealny dla kolejnej rodziny lub paczki znajomych.
+            </p>
+
+            <label for="new-group-name-input" class="block text-xs font-bold uppercase tracking-wider text-pine-900 mb-1.5">
+                Nazwa nowej grupy
+            </label>
+            <input
+                type="text"
+                id="new-group-name-input"
+                placeholder="Np. Ekipa z pracy 2026"
+                class="w-full px-4 py-2.5 rounded-xl bg-white border border-stone-300 focus:border-pine-800 focus:ring-2 focus:ring-pine-800/20 outline-none text-sm text-stone-800 mb-4 transition"
+            >
+
+            <div class="flex justify-end gap-2.5">
+                <button
+                    type="button"
+                    id="cancel-new-group-btn"
+                    class="px-4 py-2.5 rounded-xl border border-stone-300 text-stone-700 hover:bg-stone-100 text-sm font-semibold transition"
+                >
+                    Anuluj
+                </button>
+                <button
+                    type="button"
+                    id="confirm-create-group-btn"
+                    class="px-5 py-2.5 rounded-xl bg-berry-600 hover:bg-berry-700 text-white text-sm font-bold inline-flex items-center gap-1.5 transition shadow"
+                >
+                    <i data-lucide="sparkles" class="w-4 h-4"></i>
+                    <span>Utwórz grupę</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- KONFIGURACJA FIREBASE I LOGIKA APLIKACJI -->
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js';
+        import { getAuth, signInAnonymously, signInWithCustomToken } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
+        import {
+            getFirestore,
+            doc,
+            getDoc,
+            setDoc,
+            onSnapshot,
+            collection
+        } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
+
+        // ==========================================
+        // 1. STAŁE KONFIGURACYJNE I SŁOWNIKI
+        // ==========================================
+        // Jeśli wrzucasz plik na własny hosting (np. GitHub Pages, Netlify, Vercel)
+        // i chcesz, aby link działał zewnętrznie dla innych osób — wklej tutaj swoje dane
+        // z projektu w konsoli (apiKey, authDomain, projectId, storageBucket, messagingSenderId, appId).
+        const MANUAL_FIREBASE_CONFIG = {
+            apiKey: 'AIzaSyBCV614Wihjc1UIEKwWLEiOCGw2xv5JZDE',
+            authDomain: 'swiateczny-mikolaja.firebaseapp.com',
+            projectId: 'swiateczny-mikolaj',
+            storageBucket: 'swiateczny-mikolaj.firebasestorage.app',
+            messagingSenderId: '1019383254522',
+            appId: '1:1019383254522:web:f86903352c3ac2e778e843',
+            measurementId: 'G-0GLVMP85TR'
+        };
+
+        const appId = typeof __app_id !== 'undefined' && __app_id
+            ? String(__app_id)
+            : (MANUAL_FIREBASE_CONFIG.appId || 'swiateczny-list-mikolaja');
+        const rawFirebaseConfig = typeof __firebase_config !== 'undefined' && __firebase_config
+            ? __firebase_config
+            : (MANUAL_FIREBASE_CONFIG.apiKey ? MANUAL_FIREBASE_CONFIG : null);
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        const INTEREST_OPTIONS = [
+            { id: 'czytanie', label: 'Czytanie książek', emoji: '📖' },
+            { id: 'planszowki', label: 'Gry planszowe i karciane', emoji: '🎲' },
+            { id: 'gotowanie', label: 'Gotowanie i pieczenie', emoji: '🍳' },
+            { id: 'kawa_herbata', label: 'Kawa i herbata', emoji: '☕' },
+            { id: 'natura_spacery', label: 'Natura i wycieczki', emoji: '🌲' },
+            { id: 'muzyka_filmy', label: 'Muzyka, seriale i filmy', emoji: '🎬' },
+            { id: 'tworczosc', label: 'Rękodzieło i tworzenie', emoji: '🎨' },
+            { id: 'sport_ruch', label: 'Ruch i aktywność', emoji: '🧘' },
+            { id: 'wnetrza_dom', label: 'Przytulny dom', emoji: '🕯️' },
+            { id: 'nowosci', label: 'Ciekawostki i nowości', emoji: '✨' }
+        ];
+
+        const GIFT_CATEGORY_OPTIONS = [
+            { id: 'ksiazki', label: 'Książki', emoji: '📚' },
+            { id: 'gry_planszowki', label: 'Gry i planszówki', emoji: '🎲' },
+            { id: 'kosmetyki_pielegnacja', label: 'Kosmetyki i pielęgnacja', emoji: '🧴' },
+            { id: 'kulinaria_kawa', label: 'Kulinaria i kawa', emoji: '☕' },
+            { id: 'podroze_outdoor', label: 'Podróże i outdoor', emoji: '🎒' },
+            { id: 'rekodzielo_hobby', label: 'Rękodzieło i hobby', emoji: '🧶' },
+            { id: 'technologia_gadzety', label: 'Technologia i gadżety', emoji: '🔌' },
+            { id: 'dom_wnetrze', label: 'Dom i przytulne wnętrze', emoji: '🏡' },
+            { id: 'moda_dodatki', label: 'Moda i dodatki', emoji: '🧣' },
+            { id: 'muzyka_kultura', label: 'Muzyka i kultura', emoji: '🎭' }
+        ];
+
+        // ==========================================
+        // 2. STAN APLIKACJI (JEDNO ŹRÓDŁO PRAWDY)
+        // ==========================================
+        let firebaseApp = null;
+        let authInstance = null;
+        let firestoreDb = null;
+        let activeUser = null;
+        let unsubscribeGroupMeta = null;
+        let unsubscribeLetters = null;
+
+        let currentGroupId = resolveGroupIdFromUrl();
+        let currentGroupMeta = {
+            id: currentGroupId,
+            name: 'Świąteczna Grupa',
+            createdAt: Date.now()
+        };
+
+        let currentIdentityName = loadIdentityFromStorage(currentGroupId);
+        let activeTab = 'write';
+        let editingLetterId = null;
+
+        // Stan formularza „Mój list do Mikołaja”
+        let letterFormState = {
+            interests: [],
+            categories: [],
+            customCategories: [],
+            dreams: []
+        };
+
+        // Lista dokumentów w bieżącej grupie
+        let groupLetters = [];
+
+        // Prywatne notatki użytkownika dla zaklepanych prezentów (klucz: `${letterId}::${itemId}`)
+        let privateClaimNotes = loadPrivateNotesFromStorage(currentGroupId);
+
+        // ==========================================
+        // 3. POMOCNICZE FUNKCJE DOM, FORMATOWANIA I STORAGE
+        // ==========================================
+        function getEl(id) {
+            return document.getElementById(id) || null;
+        }
+
+        function safeText(value) {
+            return String(value ?? '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function normalizeName(name) {
+            return String(name ?? '').trim().toLowerCase();
+        }
+
+        function generateGroupCode() {
+            const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+            let code = 'GRU-';
+            for (let i = 0; i < 6; i++) {
+                code += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            return code;
+        }
+
+        function resolveGroupIdFromUrl() {
+            try {
+                const url = new URL(window.location.href);
+                const paramGroup = url.searchParams.get('grupa') || url.searchParams.get('group');
+                if (paramGroup && paramGroup.trim()) {
+                    return paramGroup.trim().replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 40) || generateGroupCode();
+                }
+                const hashMatch = window.location.hash.match(/grupa=([a-zA-Z0-9_-]+)/);
+                if (hashMatch && hashMatch[1]) {
+                    return hashMatch[1].slice(0, 40);
+                }
+            } catch (e) {
+                console.warn('Nie udało się odczytać parametru grupy z adresu URL:', e);
+            }
+            return generateGroupCode();
+        }
+
+        function syncGroupIdToUrl(groupId) {
+            try {
+                const url = new URL(window.location.href);
+                url.searchParams.set('grupa', groupId);
+                window.history.replaceState({}, '', url.toString());
+            } catch (e) {
+                console.warn('Nie udało się zaktualizować adresu URL:', e);
+            }
+        }
+
+        function getGroupShareLink(groupId = currentGroupId) {
+            try {
+                const url = new URL(window.location.href);
+                url.searchParams.set('grupa', groupId);
+                return url.toString();
+            } catch (e) {
+                return `${window.location.origin}${window.location.pathname}?grupa=${encodeURIComponent(groupId)}`;
+            }
+        }
+
+        function loadIdentityFromStorage(groupId) {
+            try {
+                return localStorage.getItem(`mikolaj_identity_${appId}_${groupId}`) || '';
+            } catch (e) {
+                return '';
+            }
+        }
+
+        function saveIdentityToStorage(groupId, name) {
+            try {
+                const trimmed = String(name ?? '').trim();
+                if (trimmed) {
+                    localStorage.setItem(`mikolaj_identity_${appId}_${groupId}`, trimmed);
+                } else {
+                    localStorage.removeItem(`mikolaj_identity_${appId}_${groupId}`);
+                }
+            } catch (e) {
+                console.warn('Nie udało się zapisać tożsamości w localStorage:', e);
+            }
+        }
+
+        function loadPrivateNotesFromStorage(groupId) {
+            try {
+                const raw = localStorage.getItem(`mikolaj_private_notes_${appId}_${groupId}`);
+                const parsed = raw ? JSON.parse(raw) : {};
+                return parsed && typeof parsed === 'object' ? parsed : {};
+            } catch (e) {
+                return {};
+            }
+        }
+
+        function savePrivateNotesToStorage(groupId, notesObj) {
+            try {
+                localStorage.setItem(`mikolaj_private_notes_${appId}_${groupId}`, JSON.stringify(notesObj));
+            } catch (e) {
+                console.warn('Nie udało się zapisać prywatnych notatek w localStorage:', e);
+            }
+        }
+
+        function showToast(message, type = 'info') {
+            const container = getEl('toast-container');
+            if (!container) return;
+
+            const toneMap = {
+                success: 'bg-pine-900 text-parchment-50 border-gold-400/60',
+                warning: 'bg-berry-700 text-white border-berry-800',
+                info: 'bg-stone-900 text-parchment-50 border-stone-700'
+            };
+
+            const toast = document.createElement('div');
+            toast.className = `pointer-events-auto px-4 py-3 rounded-2xl border shadow-xl text-xs sm:text-sm font-medium transition-all duration-300 ${toneMap[type] || toneMap.info}`;
+            toast.textContent = message;
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateY(8px)';
+                setTimeout(() => toast.remove(), 300);
+            }, 3400);
+        }
+
+        async function copyToClipboard(text, successMsg) {
+            if (!text) return;
+            try {
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    await navigator.clipboard.writeText(text);
+                    showToast(successMsg || 'Skopiowano do schowka!', 'success');
+                    return;
+                }
+            } catch (e) {
+                // Fallback poniżej
+            }
+
+            try {
+                const textarea = document.createElement('textarea');
+                textarea.value = text;
+                textarea.style.position = 'fixed';
+                textarea.style.opacity = '0';
+                document.body.appendChild(textarea);
+                textarea.focus();
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+                showToast(successMsg || 'Skopiowano do schowka!', 'success');
+            } catch (err) {
+                showToast('Nie udało się automatycznie skopiować tekstu.', 'warning');
+            }
+        }
+
+        // ==========================================
+        // 4. INICJALIZACJA FIREBASE I SUBSKRYPCJE
+        // ==========================================
+        function getGroupMetaDocRef(groupId) {
+            return doc(firestoreDb, 'artifacts', appId, 'public', 'data', 'groups', groupId);
+        }
+
+        function getGroupLettersCollectionRef(groupId) {
+            return collection(firestoreDb, 'artifacts', appId, 'public', 'data', 'groups', groupId, 'letters');
+        }
+
+        function updateSyncStatus(text, isOnline = true) {
+            const badge = getEl('sync-status-badge');
+            if (!badge) return;
+            badge.className = isOnline
+                ? 'inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-900'
+                : 'inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-900';
+            badge.innerHTML = `
+                <span class="w-2 h-2 rounded-full ${isOnline ? 'bg-emerald-600 animate-pulse' : 'bg-amber-600'}"></span>
+                <span>${safeText(text)}</span>
+            `;
+        }
+
+        async function initFirebaseAndGroup(groupId, customNameForNewGroup = null) {
+            try {
+                if (typeof unsubscribeGroupMeta === 'function') {
+                    unsubscribeGroupMeta();
+                    unsubscribeGroupMeta = null;
+                }
+                if (typeof unsubscribeLetters === 'function') {
+                    unsubscribeLetters();
+                    unsubscribeLetters = null;
+                }
+
+                currentGroupId = groupId;
+                syncGroupIdToUrl(groupId);
+                currentIdentityName = loadIdentityFromStorage(groupId);
+                privateClaimNotes = loadPrivateNotesFromStorage(groupId);
+                editingLetterId = null;
+
+                const identityInput = getEl('identity-input');
+                if (identityInput) {
+                    identityInput.value = currentIdentityName;
+                }
+
+                if (!firebaseApp) {
+                    const parsedConfig = typeof rawFirebaseConfig === 'string'
+                        ? JSON.parse(rawFirebaseConfig)
+                        : rawFirebaseConfig;
+
+                    if (!parsedConfig || !parsedConfig.apiKey) {
+                        updateSyncStatus('Tryb lokalny (brak konfiguracji)', false);
+                        renderAll();
+                        return;
+                    }
+
+                    firebaseApp = initializeApp(parsedConfig);
+                    authInstance = getAuth(firebaseApp);
+                    firestoreDb = getFirestore(firebaseApp);
+
+                    if (initialAuthToken) {
+                        await signInWithCustomToken(authInstance, initialAuthToken);
+                    } else {
+                        await signInAnonymously(authInstance);
+                    }
+                    activeUser = authInstance.currentUser;
+                }
+
+                const metaRef = getGroupMetaDocRef(groupId);
+                const metaSnap = await getDoc(metaRef);
+
+                if (!metaSnap.exists()) {
+                    const initialMeta = {
+                        id: groupId,
+                        name: (customNameForNewGroup && customNameForNewGroup.trim()) || 'Świąteczna Grupa',
+                        createdAt: Date.now()
+                    };
+                    await setDoc(metaRef, initialMeta);
+                    currentGroupMeta = initialMeta;
+                } else {
+                    currentGroupMeta = { id: groupId, ...metaSnap.data() };
+                }
+
+                updateSyncStatus('Połączono z pokojem na żywo', true);
+                renderAll();
+
+                unsubscribeGroupMeta = onSnapshot(
+                    metaRef,
+                    (snap) => {
+                        if (snap.exists()) {
+                            currentGroupMeta = { id: groupId, ...snap.data() };
+                            renderGroupHeader();
+                        }
+                    },
+                    (err) => {
+                        console.error('Błąd nasłuchu grupy:', err);
+                        updateSyncStatus('Problem z synchronizacją grupy', false);
+                    }
+                );
+
+                unsubscribeLetters = onSnapshot(
+                    getGroupLettersCollectionRef(groupId),
+                    (snapshot) => {
+                        const loaded = [];
+                        snapshot.forEach((docSnap) => {
+                            loaded.push({ id: docSnap.id, ...docSnap.data() });
+                        });
+                        loaded.sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+                        groupLetters = loaded;
+                        renderAll();
+                    },
+                    (err) => {
+                        console.error('Błąd nasłuchu listów:', err);
+                        updateSyncStatus('Problem z odczytem listów', false);
+                    }
+                );
+            } catch (err) {
+                console.error('Błąd inicjalizacji Firebase:', err);
+                updateSyncStatus('Tryb ograniczony', false);
+                renderAll();
+            }
+        }
+
+        // ==========================================
+        // 5. ZARZĄDZANIE GRUPĄ I TOŻSAMOŚCIĄ
+        // ==========================================
+        async function saveCurrentGroupName() {
+            const input = getEl('group-name-input');
+            const nextName = input ? input.value.trim() : '';
+            if (!nextName) {
+                showToast('Wpisz nazwę grupy przed zapisaniem.', 'warning');
+                return;
+            }
+
+            currentGroupMeta.name = nextName;
+            renderGroupHeader();
+
+            if (firestoreDb && activeUser) {
+                try {
+                    await setDoc(getGroupMetaDocRef(currentGroupId), {
+                        id: currentGroupId,
+                        name: nextName,
+                        createdAt: currentGroupMeta.createdAt || Date.now()
+                    }, { merge: true });
+                    showToast('Zapisano nazwę grupy!', 'success');
+                } catch (err) {
+                    console.error('Błąd zapisu nazwy grupy:', err);
+                    showToast('Nie udało się zapisać nazwy grupy.', 'warning');
+                }
+            } else {
+                showToast('Zaktualizowano nazwę grupy.', 'success');
+            }
+        }
+
+        function openNewGroupModal() {
+            const modal = getEl('new-group-modal');
+            const input = getEl('new-group-name-input');
+            if (input) input.value = '';
+            if (modal) {
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+            }
+            if (input) input.focus();
+        }
+
+        function closeNewGroupModal() {
+            const modal = getEl('new-group-modal');
+            if (modal) {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }
+        }
+
+        async function createNewGroupFromModal() {
+            const input = getEl('new-group-name-input');
+            const name = input ? input.value.trim() : '';
+            const newCode = generateGroupCode();
+            closeNewGroupModal();
+            showToast(`Tworzę nową grupę: ${name || newCode}...`, 'info');
+            await initFirebaseAndGroup(newCode, name || 'Nowa Świąteczna Grupa');
+            showToast('Utworzono nową grupę i wygenerowano nowy link!', 'success');
+        }
+
+        function setUserIdentity(rawName) {
+            const cleaned = String(rawName ?? '').trim();
+            currentIdentityName = cleaned;
+            saveIdentityToStorage(currentGroupId, cleaned);
+
+            const identityInput = getEl('identity-input');
+            if (identityInput) identityInput.value = cleaned;
+
+            if (cleaned) {
+                showToast(`Przedstawiasz się teraz jako: ${cleaned}`, 'success');
+            } else {
+                showToast('Wyczyszczono tożsamość w tej grupie.', 'info');
+            }
+            renderAll();
+        }
+
+        function ensureIdentityBeforeClaim() {
+            if (currentIdentityName && currentIdentityName.trim()) {
+                return true;
+            }
+            const input = getEl('identity-input');
+            const typed = input ? input.value.trim() : '';
+            if (typed) {
+                setUserIdentity(typed);
+                return true;
+            }
+            showToast('Najpierw wpisz swoje imię w polu „Kim jesteś w tej grupie?”.', 'warning');
+            if (input) input.focus();
+            return false;
+        }
+
+        function isCurrentUserAuthor(letter) {
+            if (!currentIdentityName || !letter || !letter.authorName) return false;
+            return normalizeName(currentIdentityName) === normalizeName(letter.authorName);
+        }
+
+        function isClaimedByCurrentUser(item) {
+            if (!currentIdentityName || !item || !item.claimedByName) return false;
+            return normalizeName(currentIdentityName) === normalizeName(item.claimedByName);
+        }
+
+        // ==========================================
+        // 6. OBSŁUGA FORMULARZA LISTU I DZIEDZIN
+        // ==========================================
+        function toggleInterest(id) {
+            const idx = letterFormState.interests.indexOf(id);
+            if (idx >= 0) {
+                letterFormState.interests.splice(idx, 1);
+            } else {
+                letterFormState.interests.push(id);
+            }
+            renderInterestsField();
+        }
+
+        function toggleCategory(key) {
+            const idx = letterFormState.categories.indexOf(key);
+            if (idx >= 0) {
+                letterFormState.categories.splice(idx, 1);
+            } else {
+                letterFormState.categories.push(key);
+            }
+            renderCategoriesField();
+        }
+
+        function addCustomCategory() {
+            const input = getEl('custom-category-input');
+            const label = input ? input.value.trim() : '';
+            if (!label) {
+                showToast('Wpisz nazwę własnej dziedziny prezentowej.', 'warning');
+                if (input) input.focus();
+                return;
+            }
+
+            const slug = `custom_${label.toLowerCase().replace(/[^a-z0-9ąćęłńóśźż]+/gi, '_')}`;
+            const existing = letterFormState.customCategories.find(
+                (c) => c.key === slug || normalizeName(c.label) === normalizeName(label)
+            );
+
+            if (existing) {
+                if (!letterFormState.categories.includes(existing.key)) {
+                    letterFormState.categories.push(existing.key);
+                }
+            } else {
+                letterFormState.customCategories.push({ key: slug, label });
+                letterFormState.categories.push(slug);
+            }
+
+            if (input) input.value = '';
+            renderCategoriesField();
+            showToast(`Dodano i zaznaczono dziedzinę: ${label}`, 'success');
+        }
+
+        function addDreamFromInputs() {
+            const titleEl = getEl('dream-title-input');
+            const detailsEl = getEl('dream-details-input');
+
+            const title = titleEl ? titleEl.value.trim() : '';
+            const details = detailsEl ? detailsEl.value.trim() : '';
+
+            if (!title) {
+                showToast('Wpisz nazwę wymarzonego prezentu.', 'warning');
+                if (titleEl) titleEl.focus();
+                return;
+            }
+
+            letterFormState.dreams.push({
+                id: `dream-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+                title,
+                details,
+                claimedByName: null
+            });
+
+            if (titleEl) titleEl.value = '';
+            if (detailsEl) detailsEl.value = '';
+            if (titleEl) titleEl.focus();
+
+            renderDreamsField();
+            showToast(`Dodano marzenie: ${title}`, 'success');
+        }
+
+        function removeDreamItem(dreamId) {
+            letterFormState.dreams = letterFormState.dreams.filter((d) => d.id !== dreamId);
+            renderDreamsField();
+        }
+
+        function getCategoryLabelByKey(key) {
+            const preset = GIFT_CATEGORY_OPTIONS.find((c) => c.id === key);
+            if (preset) return `${preset.emoji} ${preset.label}`;
+            const custom = letterFormState.customCategories.find((c) => c.key === key);
+            if (custom) return `🎁 ${custom.label}`;
+            return key;
+        }
+
+        function buildLetterPayloadFromForm() {
+            const authorInput = getEl('author-name-input');
+            const interestsNotesInput = getEl('interests-notes-input');
+            const categoriesTipInput = getEl('categories-tip-input');
+            const tryNewInput = getEl('try-new-input');
+            const avoidInput = getEl('avoid-input');
+
+            const authorName = authorInput ? authorInput.value.trim() : '';
+            const interestsNotes = interestsNotesInput ? interestsNotesInput.value.trim() : '';
+            const categoriesTip = categoriesTipInput ? categoriesTipInput.value.trim() : '';
+            const tryNew = tryNewInput ? tryNewInput.value.trim() : '';
+            const avoid = avoidInput ? avoidInput.value.trim() : '';
+
+            const dreams = letterFormState.dreams.map((d) => ({ ...d }));
+            const dreamTitleInput = getEl('dream-title-input');
+            const dreamDetailsInput = getEl('dream-details-input');
+            const pendingDreamTitle = dreamTitleInput ? dreamTitleInput.value.trim() : '';
+
+            if (pendingDreamTitle) {
+                dreams.push({
+                    id: `dream-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+                    title: pendingDreamTitle,
+                    details: dreamDetailsInput ? dreamDetailsInput.value.trim() : '',
+                    claimedByName: null
+                });
+            }
+
+            const selectedCategoryLabels = letterFormState.categories.map((key) => {
+                const preset = GIFT_CATEGORY_OPTIONS.find((c) => c.id === key);
+                if (preset) return preset.label;
+                const custom = letterFormState.customCategories.find((c) => c.key === key);
+                if (custom) return custom.label;
+                return key;
+            });
+
+            const existingDoc = editingLetterId
+                ? groupLetters.find((l) => l.id === editingLetterId)
+                : null;
+
+            return {
+                authorName,
+                interests: [...letterFormState.interests],
+                interestsNotes,
+                categories: [...letterFormState.categories],
+                customCategories: [...letterFormState.customCategories],
+                categoryLabels: selectedCategoryLabels,
+                categoriesTip,
+                dreams,
+                extraIdeas: existingDoc && Array.isArray(existingDoc.extraIdeas) ? existingDoc.extraIdeas : [],
+                tryNew,
+                avoid,
+                createdAt: existingDoc && existingDoc.createdAt ? existingDoc.createdAt : Date.now(),
+                updatedAt: Date.now()
+            };
+        }
+
+        function formatLetterPlainText(letter) {
+            const lines = [`🎄 List do Świętego Mikołaja — ${letter.authorName || 'Bliska osoba'}`];
+
+            if (letter.interests && letter.interests.length) {
+                const labels = letter.interests.map((id) => {
+                    const opt = INTEREST_OPTIONS.find((o) => o.id === id);
+                    return opt ? `${opt.emoji} ${opt.label}` : id;
+                });
+                lines.push(`\n✨ Zainteresowania: ${labels.join(', ')}`);
+            }
+            if (letter.interestsNotes) {
+                lines.push(`   ${letter.interestsNotes}`);
+            }
+
+            if (letter.categories && letter.categories.length) {
+                const catLabels = letter.categories.map((k) => getCategoryLabelByKey(k));
+                lines.push(`\n🎁 Lubię dostawać prezenty z dziedzin: ${catLabels.join(', ')}`);
+            }
+            if (letter.categoriesTip) {
+                lines.push(`   Podpowiedź: ${letter.categoriesTip}`);
+            }
+
+            if (letter.dreams && letter.dreams.length) {
+                lines.push('\n🌟 O czym marzę w tym roku:');
+                letter.dreams.forEach((d, index) => {
+                    const parts = [`${index + 1}. ${d.title}`];
+                    if (d.details) parts.push(`(${d.details})`);
+                    lines.push(parts.join(' '));
+                });
+            }
+
+            if (letter.tryNew) {
+                lines.push(`\n🧭 Czego mogę chcieć spróbować: ${letter.tryNew}`);
+            }
+            if (letter.avoid) {
+                lines.push(`\n🚫 Czego lepiej nie kupować: ${letter.avoid}`);
+            }
+
+            return lines.join('\n');
+        }
+
+        async function handleSaveLetterSubmit(event) {
+            event.preventDefault();
+            const payload = buildLetterPayloadFromForm();
+
+            if (!payload.authorName) {
+                showToast('Wpisz swoje imię lub pseudonim pod listem.', 'warning');
+                const authorEl = getEl('author-name-input');
+                if (authorEl) authorEl.focus();
+                return;
+            }
+
+            // Automatycznie ustaw tożsamość autora, jeśli nie była jeszcze ustawiona
+            if (!currentIdentityName) {
+                currentIdentityName = payload.authorName;
+                saveIdentityToStorage(currentGroupId, currentIdentityName);
+                const identityEl = getEl('identity-input');
+                if (identityEl) identityEl.value = currentIdentityName;
+            }
+
+            const docId = editingLetterId || `letter-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+
+            // Zachowaj ewentualne rezerwacje na już istniejących marzeniach przy edycji
+            if (editingLetterId) {
+                const existing = groupLetters.find((l) => l.id === editingLetterId);
+                if (existing && Array.isArray(existing.dreams)) {
+                    payload.dreams = payload.dreams.map((d) => {
+                        const prev = existing.dreams.find((oldD) => oldD.id === d.id);
+                        return prev ? { ...d, claimedByName: prev.claimedByName || null } : d;
+                    });
+                }
+            }
+
+            if (firestoreDb && activeUser) {
+                try {
+                    await setDoc(doc(getGroupLettersCollectionRef(currentGroupId), docId), payload);
+                    editingLetterId = null;
+                    showToast(`Zapisano list osoby: ${payload.authorName}!`, 'success');
+                    switchTab('group');
+                } catch (err) {
+                    console.error('Błąd zapisu listu:', err);
+                    showToast('Nie udało się zapisać listu w grupie.', 'warning');
+                }
+            } else {
+                const idx = groupLetters.findIndex((l) => l.id === docId);
+                const localRecord = { id: docId, ...payload };
+                if (idx >= 0) groupLetters[idx] = localRecord;
+                else groupLetters.push(localRecord);
+                editingLetterId = null;
+                showToast(`Zapisano list osoby: ${payload.authorName}!`, 'success');
+                switchTab('group');
+            }
+        }
+
+        function loadLetterForEditing(letterId) {
+            const letter = groupLetters.find((l) => l.id === letterId);
+            if (!letter) return;
+
+            editingLetterId = letter.id;
+            letterFormState = {
+                interests: Array.isArray(letter.interests) ? [...letter.interests] : [],
+                categories: Array.isArray(letter.categories) ? [...letter.categories] : [],
+                customCategories: Array.isArray(letter.customCategories) ? [...letter.customCategories] : [],
+                dreams: Array.isArray(letter.dreams) ? letter.dreams.map((d) => ({ ...d })) : []
+            };
+
+            const authorEl = getEl('author-name-input');
+            const interestsNotesEl = getEl('interests-notes-input');
+            const categoriesTipEl = getEl('categories-tip-input');
+            const tryNewEl = getEl('try-new-input');
+            const avoidEl = getEl('avoid-input');
+
+            if (authorEl) authorEl.value = letter.authorName || '';
+            if (interestsNotesEl) interestsNotesEl.value = letter.interestsNotes || '';
+            if (categoriesTipEl) categoriesTipEl.value = letter.categoriesTip || '';
+            if (tryNewEl) tryNewEl.value = letter.tryNew || '';
+            if (avoidEl) avoidEl.value = letter.avoid || '';
+
+            renderFormSection();
+            switchTab('write');
+            showToast(`Wczytano list osoby: ${letter.authorName} do edycji.`, 'info');
+        }
+
+        function resetLetterForm() {
+            editingLetterId = null;
+            letterFormState = {
+                interests: [],
+                categories: [],
+                customCategories: [],
+                dreams: []
+            };
+
+            const authorEl = getEl('author-name-input');
+            const customCatEl = getEl('custom-category-input');
+            const dreamTitleEl = getEl('dream-title-input');
+            const dreamDetailsEl = getEl('dream-details-input');
+            const interestsNotesEl = getEl('interests-notes-input');
+            const categoriesTipEl = getEl('categories-tip-input');
+            const tryNewEl = getEl('try-new-input');
+            const avoidEl = getEl('avoid-input');
+
+            if (authorEl) authorEl.value = '';
+            if (customCatEl) customCatEl.value = '';
+            if (dreamTitleEl) dreamTitleEl.value = '';
+            if (dreamDetailsEl) dreamDetailsEl.value = '';
+            if (interestsNotesEl) interestsNotesEl.value = '';
+            if (categoriesTipEl) categoriesTipEl.value = '';
+            if (tryNewEl) tryNewEl.value = '';
+            if (avoidEl) avoidEl.value = '';
+
+            renderFormSection();
+            showToast('Wyczyszczono formularz listu.', 'info');
+        }
+
+        // ==========================================
+        // 7. ZAKLEPYWANIE PREZENTÓW I TAJNE POMYSŁY
+        // ==========================================
+        async function toggleClaimItem(letterId, itemType, itemId) {
+            if (!firestoreDb || !activeUser) return;
+            if (!ensureIdentityBeforeClaim()) return;
+
+            const letter = groupLetters.find((l) => l.id === letterId);
+            if (!letter) return;
+
+            if (isCurrentUserAuthor(letter)) {
+                showToast('Nie możesz zaklepywać prezentów na własnym liście.', 'warning');
+                return;
+            }
+
+            const listField = itemType === 'extra' ? 'extraIdeas' : 'dreams';
+            const items = Array.isArray(letter[listField]) ? letter[listField].map((i) => ({ ...i })) : [];
+            const target = items.find((i) => i.id === itemId);
+            if (!target) return;
+
+            const meNorm = normalizeName(currentIdentityName);
+            const claimerNorm = normalizeName(target.claimedByName);
+
+            if (!target.claimedByName) {
+                target.claimedByName = currentIdentityName.trim();
+                showToast(`Zaklepano: ${target.title}`, 'success');
+            } else if (claimerNorm === meNorm) {
+                target.claimedByName = null;
+                showToast(`Zwolniono rezerwację: ${target.title}`, 'info');
+            } else {
+                showToast(`Ten prezent jest już zaklepany przez: ${target.claimedByName}.`, 'warning');
+                return;
+            }
+
+            try {
+                await setDoc(doc(getGroupLettersCollectionRef(currentGroupId), letterId), {
+                    [listField]: items,
+                    updatedAt: Date.now()
+                }, { merge: true });
+            } catch (err) {
+                console.error('Błąd aktualizacji rezerwacji:', err);
+                showToast('Nie udało się zaktualizować rezerwacji.', 'warning');
+            }
+        }
+
+        async function addSecretIdeaToLetter(letterId) {
+            if (!firestoreDb || !activeUser) return;
+            if (!ensureIdentityBeforeClaim()) return;
+
+            const letter = groupLetters.find((l) => l.id === letterId);
+            if (!letter || isCurrentUserAuthor(letter)) return;
+
+            const titleInput = getEl(`secret-title-${letterId}`);
+            const claimCheckbox = getEl(`secret-claim-${letterId}`);
+
+            const title = titleInput ? titleInput.value.trim() : '';
+            const shouldClaimNow = claimCheckbox ? Boolean(claimCheckbox.checked) : true;
+
+            if (!title) {
+                showToast('Wpisz tajny pomysł prezentowy.', 'warning');
+                if (titleInput) titleInput.focus();
+                return;
+            }
+
+            const newIdea = {
+                id: `secret-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+                title,
+                addedByName: currentIdentityName.trim(),
+                claimedByName: shouldClaimNow ? currentIdentityName.trim() : null
+            };
+
+            const nextExtraIdeas = Array.isArray(letter.extraIdeas) ? [...letter.extraIdeas, newIdea] : [newIdea];
+
+            try {
+                await setDoc(doc(getGroupLettersCollectionRef(currentGroupId), letterId), {
+                    extraIdeas: nextExtraIdeas,
+                    updatedAt: Date.now()
+                }, { merge: true });
+
+                if (titleInput) titleInput.value = '';
+                showToast(`Dodano tajny pomysł dla: ${letter.authorName}`, 'success');
+            } catch (err) {
+                console.error('Błąd dodawania tajnego pomysłu:', err);
+                showToast('Nie udało się dodać tajnego pomysłu.', 'warning');
+            }
+        }
+
+        function updatePrivateNote(noteKey, value) {
+            privateClaimNotes[noteKey] = value;
+            savePrivateNotesToStorage(currentGroupId, privateClaimNotes);
+        }
+
+        // ==========================================
+        // 8. ZAKŁADKI I RENDEROWANIE WIDOKÓW
+        // ==========================================
+        function switchTab(tabName) {
+            activeTab = tabName;
+
+            document.querySelectorAll('.tab-btn').forEach((btn) => {
+                const isActive = btn.getAttribute('data-tab-btn') === tabName;
+                btn.className = isActive
+                    ? 'tab-btn flex items-center justify-center gap-2 px-4 py-3.5 rounded-2xl font-bold text-sm transition shadow bg-gold-400 text-pine-950 ring-2 ring-white/60'
+                    : 'tab-btn flex items-center justify-center gap-2 px-4 py-3.5 rounded-2xl font-semibold text-sm transition shadow bg-pine-800/90 hover:bg-pine-900 text-parchment-100 border border-gold-400/25';
+            });
+
+            const writePanel = getEl('tab-write');
+            const groupPanel = getEl('tab-group');
+            const claimedPanel = getEl('tab-claimed');
+
+            if (writePanel) writePanel.classList.toggle('hidden', tabName !== 'write');
+            if (groupPanel) groupPanel.classList.toggle('hidden', tabName !== 'group');
+            if (claimedPanel) claimedPanel.classList.toggle('hidden', tabName !== 'claimed');
+        }
+
+        function renderGroupHeader() {
+            const codeBadge = getEl('group-code-badge');
+            const nameInput = getEl('group-name-input');
+            if (codeBadge) codeBadge.textContent = `kod: ${currentGroupId}`;
+            if (nameInput && document.activeElement !== nameInput) {
+                nameInput.value = currentGroupMeta.name || '';
+            }
+        }
+
+        function renderIdentityBar() {
+            const datalist = getEl('group-members-datalist');
+            const helperText = getEl('identity-helper-text');
+
+            if (datalist) {
+                const namesSet = new Set();
+                groupLetters.forEach((l) => {
+                    if (l.authorName && l.authorName.trim()) namesSet.add(l.authorName.trim());
+                });
+                datalist.innerHTML = Array.from(namesSet)
+                    .map((n) => `<option value="${safeText(n)}"></option>`)
+                    .join('');
+            }
+
+            if (helperText) {
+                if (currentIdentityName) {
+                    helperText.innerHTML = `Zalogowano jako <strong class="text-pine-950">${safeText(currentIdentityName)}</strong> — Twój list ma ukryte rezerwacje.`;
+                } else {
+                    helperText.textContent = 'Twoja tożsamość chroni niespodzianki na Twoim własnym liście.';
+                }
+            }
+        }
+
+        function renderInterestsField() {
+            const container = getEl('interests-tags-container');
+            if (!container) return;
+
+            container.innerHTML = INTEREST_OPTIONS.map((opt) => {
+                const active = letterFormState.interests.includes(opt.id);
+                return `
+                    <button
+                        type="button"
+                        data-interest-id="${opt.id}"
+                        class="interest-chip px-3.5 py-2 rounded-2xl text-xs sm:text-sm font-medium inline-flex items-center gap-1.5 border transition ${
+                            active
+                                ? 'bg-pine-800 text-parchment-50 border-pine-900 shadow-sm'
+                                : 'bg-white text-stone-700 border-stone-300 hover:border-pine-800'
+                        }"
+                    >
+                        <span>${opt.emoji}</span>
+                        <span>${safeText(opt.label)}</span>
+                    </button>
+                `;
+            }).join('');
+
+            container.querySelectorAll('.interest-chip').forEach((btn) => {
+                btn.addEventListener('click', () => {
+                    toggleInterest(btn.getAttribute('data-interest-id'));
+                });
+            });
+        }
+
+        function renderCategoriesField() {
+            const container = getEl('gift-categories-container');
+            if (!container) return;
+
+            const allCategories = [
+                ...GIFT_CATEGORY_OPTIONS.map((c) => ({
+                    key: c.id,
+                    label: `${c.emoji} ${c.label}`,
+                    isCustom: false
+                })),
+                ...letterFormState.customCategories.map((c) => ({
+                    key: c.key,
+                    label: `🎁 ${c.label}`,
+                    isCustom: true
+                }))
+            ];
+
+            container.innerHTML = allCategories.map((cat) => {
+                const checked = letterFormState.categories.includes(cat.key);
+                const safeId = `cat-chk-${cat.key.replace(/[^a-zA-Z0-9_-]/g, '_')}`;
+                return `
+                    <label
+                        for="${safeId}"
+                        class="flex items-center gap-2.5 p-3 rounded-2xl border cursor-pointer transition select-none ${
+                            checked
+                                ? 'bg-berry-600/10 border-berry-600 text-pine-950 font-semibold'
+                                : 'bg-white border-stone-200 hover:border-pine-800/50 text-stone-700'
+                        }"
+                    >
+                        <input
+                            type="checkbox"
+                            id="${safeId}"
+                            data-category-key="${safeText(cat.key)}"
+                            ${checked ? 'checked' : ''}
+                            class="category-checkbox w-4 h-4 rounded accent-berry-600 shrink-0"
+                        >
+                        <span class="text-xs sm:text-sm leading-snug">${safeText(cat.label)}</span>
+                    </label>
+                `;
+            }).join('');
+
+            container.querySelectorAll('.category-checkbox').forEach((chk) => {
+                chk.addEventListener('change', () => {
+                    toggleCategory(chk.getAttribute('data-category-key'));
+                });
+            });
+        }
+
+        function renderDreamsField() {
+            const container = getEl('dreams-list-container');
+            if (!container) return;
+
+            if (!letterFormState.dreams.length) {
+                container.innerHTML = `
+                    <div class="text-center py-5 px-4 rounded-2xl border border-dashed border-stone-300 text-xs sm:text-sm text-stone-500">
+                        Nie dodano jeszcze żadnych konkretnych marzeń. Wpisz prezent powyżej i kliknij „Dodaj marzenie do listy”.
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = letterFormState.dreams.map((dream) => `
+                <div class="flex items-center justify-between gap-3 p-3.5 rounded-2xl bg-white border border-stone-200 shadow-2xs">
+                    <div class="min-w-0">
+                        <div class="font-semibold text-sm text-pine-950">${safeText(dream.title)}</div>
+                        <div class="flex flex-wrap items-center gap-2 mt-1 text-xs text-stone-600">
+                            ${dream.details ? `<span class="px-2 py-0.5 rounded-md bg-parchment-100 border border-stone-200">${safeText(dream.details)}</span>` : ''}
+                        </div>
+                    </div>
+                    <button
+                        type="button"
+                        data-remove-dream="${safeText(dream.id)}"
+                        title="Usuń marzenie"
+                        class="remove-dream-btn p-2 rounded-xl text-stone-400 hover:text-berry-700 hover:bg-berry-600/10 transition shrink-0"
+                    >
+                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                    </button>
+                </div>
+            `).join('');
+
+            container.querySelectorAll('.remove-dream-btn').forEach((btn) => {
+                btn.addEventListener('click', () => {
+                    removeDreamItem(btn.getAttribute('data-remove-dream'));
+                });
+            });
+
+            lucide.createIcons();
+        }
+
+        function renderFormSection() {
+            renderInterestsField();
+            renderCategoriesField();
+            renderDreamsField();
+        }
+
+        // ==========================================
+        // 9. RENDEROWANIE ZAKŁADKI „ZEBRANE LISTY” I „MOJE ZAKLEPANE”
+        // ==========================================
+        function renderClaimBadgeAndButton(letterId, itemType, item) {
+            const claimedBy = item && item.claimedByName ? String(item.claimedByName).trim() : '';
+            const isMine = isClaimedByCurrentUser(item);
+
+            if (!claimedBy) {
+                return `
+                    <button
+                        type="button"
+                        data-claim-letter="${safeText(letterId)}"
+                        data-claim-type="${safeText(itemType)}"
+                        data-claim-id="${safeText(item.id)}"
+                        class="claim-action-btn px-3 py-1.5 rounded-xl bg-pine-800 hover:bg-pine-900 text-parchment-50 text-xs font-semibold inline-flex items-center gap-1.5 transition shrink-0"
+                    >
+                        <i data-lucide="gift" class="w-3.5 h-3.5"></i>
+                        <span>Zaklep prezent</span>
+                    </button>
+                `;
+            }
+
+            if (isMine) {
+                return `
+                    <button
+                        type="button"
+                        data-claim-letter="${safeText(letterId)}"
+                        data-claim-type="${safeText(itemType)}"
+                        data-claim-id="${safeText(item.id)}"
+                        class="claim-action-btn px-3 py-1.5 rounded-xl bg-gold-400 hover:bg-gold-500 text-pine-950 text-xs font-bold inline-flex items-center gap-1.5 transition shrink-0"
+                    >
+                        <i data-lucide="check-circle-2" class="w-3.5 h-3.5"></i>
+                        <span>Zaklepane przez Ciebie</span>
+                    </button>
+                `;
+            }
+
+            return `
+                <span class="px-3 py-1.5 rounded-xl bg-berry-600/15 text-berry-800 border border-berry-600/30 text-xs font-semibold inline-flex items-center gap-1.5 shrink-0">
+                    <i data-lucide="lock" class="w-3.5 h-3.5"></i>
+                    <span>Zaklepane (przez: ${safeText(claimedBy)})</span>
+                </span>
+            `;
+        }
+
+        function renderGroupLettersTab() {
+            const container = getEl('group-letters-container');
+            const countBadge = getEl('group-letters-count');
+            if (countBadge) countBadge.textContent = String(groupLetters.length);
+            if (!container) return;
+
+            if (!groupLetters.length) {
+                container.innerHTML = `
+                    <div class="md:col-span-2 card-surface rounded-3xl p-8 text-center">
+                        <div class="text-4xl mb-2">🎄</div>
+                        <h2 class="font-serif text-xl font-bold text-pine-950">W tej grupie nie ma jeszcze żadnych listów</h2>
+                        <p class="text-sm text-stone-600 mt-1 max-w-md mx-auto">
+                            Wypełnij swój list w pierwszej zakładce lub wyślij link do grupy bliskim, aby każdy mógł dopisać swoje inspiracje.
+                        </p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = groupLetters.map((letter) => {
+                const isOwn = isCurrentUserAuthor(letter);
+
+                const interestChips = (letter.interests || []).map((id) => {
+                    const opt = INTEREST_OPTIONS.find((o) => o.id === id);
+                    const label = opt ? `${opt.emoji} ${opt.label}` : id;
+                    return `<span class="px-2.5 py-1 rounded-full bg-pine-800/10 text-pine-950 text-xs font-medium">${safeText(label)}</span>`;
+                }).join('');
+
+                const categoryChips = (letter.categories || []).map((key) => {
+                    const preset = GIFT_CATEGORY_OPTIONS.find((c) => c.id === key);
+                    const custom = (letter.customCategories || []).find((c) => c.key === key);
+                    const label = preset
+                        ? `${preset.emoji} ${preset.label}`
+                        : custom
+                            ? `🎁 ${custom.label}`
+                            : key;
+                    return `<span class="px-2.5 py-1 rounded-full bg-berry-600/10 text-berry-800 text-xs font-medium">${safeText(label)}</span>`;
+                }).join('');
+
+                // Blok wymarzonych prezentów: dla autora ukrywa stan zaklepania, aby zachować niespodziankę
+                let dreamsBlockHtml = '';
+                if (!letter.dreams || !letter.dreams.length) {
+                    dreamsBlockHtml = `<p class="text-xs text-stone-500 italic">Brak wpisanych konkretnych prezentów.</p>`;
+                } else if (isOwn) {
+                    dreamsBlockHtml = `
+                        <div class="mb-2.5 px-3 py-2 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-950 flex items-center gap-2">
+                            <i data-lucide="eye-off" class="w-4 h-4 shrink-0 text-amber-700"></i>
+                            <span>Statusy zaklepania są ukryte na Twoim liście, aby nie psuć świątecznej niespodzianki.</span>
+                        </div>
+                        <ul class="space-y-2">
+                            ${letter.dreams.map((d) => `
+                                <li class="p-3 rounded-xl bg-parchment-100/80 border border-stone-200/90">
+                                    <div class="font-semibold text-sm text-pine-950">${safeText(d.title)}</div>
+                                    ${d.details ? `
+                                        <div class="flex flex-wrap gap-2 mt-1 text-xs text-stone-600">
+                                            <span>${safeText(d.details)}</span>
+                                        </div>
+                                    ` : ''}
+                                </li>
+                            `).join('')}
+                        </ul>
+                    `;
+                } else {
+                    // Widok dla pozostałych uczestników grupy
+                    dreamsBlockHtml = `
+                        <ul class="space-y-2">
+                            ${letter.dreams.map((d) => `
+                                <li class="p-3 rounded-xl bg-parchment-100/80 border border-stone-200/90 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5">
+                                    <div class="min-w-0">
+                                        <div class="font-semibold text-sm text-pine-950">${safeText(d.title)}</div>
+                                        ${d.details ? `
+                                            <div class="flex flex-wrap gap-2 mt-0.5 text-xs text-stone-600">
+                                                <span>${safeText(d.details)}</span>
+                                            </div>
+                                        ` : ''}
+                                    </div>
+                                    ${renderClaimBadgeAndButton(letter.id, 'dream', d)}
+                                </li>
+                            `).join('')}
+                        </ul>
+                    `;
+                }
+
+                // Tajne pomysły spoza listy: widoczne tylko dla innych obdarowujących (nigdy dla autora listu)
+                let secretIdeasHtml = '';
+                if (!isOwn) {
+                    const existingSecretItems = (letter.extraIdeas || []).map((idea) => `
+                        <li class="p-2.5 rounded-xl bg-white border border-gold-400/40 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                            <div class="min-w-0 text-xs">
+                                <span class="font-semibold text-pine-950">${safeText(idea.title)}</span>
+                                ${idea.addedByName ? `<span class="block text-[11px] text-stone-500 mt-0.5">Pomysł od: ${safeText(idea.addedByName)}</span>` : ''}
+                            </div>
+                            ${renderClaimBadgeAndButton(letter.id, 'extra', idea)}
+                        </li>
+                    `).join('');
+
+                    secretIdeasHtml = `
+                        <div class="mt-4 pt-4 border-t border-dashed border-stone-300">
+                            <div class="text-xs font-bold uppercase tracking-wider text-berry-700 mb-2 flex items-center gap-1.5">
+                                <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
+                                <span>Tajne pomysły obdarowujących (niewidoczne dla autora)</span>
+                            </div>
+                            ${existingSecretItems ? `<ul class="space-y-2 mb-3">${existingSecretItems}</ul>` : ''}
+                            <div class="flex flex-col sm:flex-row gap-2">
+                                <input
+                                    type="text"
+                                    id="secret-title-${safeText(letter.id)}"
+                                    placeholder="Dodaj tajny pomysł spoza listy..."
+                                    class="flex-1 px-3 py-2 rounded-xl bg-white border border-stone-300 text-xs text-stone-800 focus:border-pine-800 outline-none"
+                                >
+                                <button
+                                    type="button"
+                                    data-add-secret="${safeText(letter.id)}"
+                                    class="add-secret-btn px-3.5 py-2 rounded-xl bg-pine-800 hover:bg-pine-900 text-parchment-50 text-xs font-semibold shrink-0 transition"
+                                >
+                                    Dodaj pomysł
+                                </button>
+                            </div>
+                            <label class="mt-2 inline-flex items-center gap-1.5 text-[11px] text-stone-600 cursor-pointer select-none">
+                                <input type="checkbox" id="secret-claim-${safeText(letter.id)}" checked class="rounded accent-berry-600">
+                                <span>Od razu zaklep ten pomysł dla siebie</span>
+                            </label>
+                        </div>
+                    `;
+                }
+
+                return `
+                    <article class="card-surface rounded-3xl p-5 sm:p-6 flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-start justify-between gap-3 pb-3.5 mb-4 border-b border-stone-200/80">
+                                <div>
+                                    <div class="flex items-center gap-2 flex-wrap">
+                                        <h3 class="font-serif text-xl font-bold text-pine-950">${safeText(letter.authorName)}</h3>
+                                        ${isOwn ? '<span class="px-2.5 py-0.5 rounded-full bg-gold-400/35 text-pine-950 text-[11px] font-bold">Twój list</span>' : ''}
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-1.5 shrink-0">
+                                    <button
+                                        type="button"
+                                        data-copy-letter="${safeText(letter.id)}"
+                                        title="Kopiuj treść listu"
+                                        class="copy-letter-item-btn p-2 rounded-xl border border-stone-200 text-stone-600 hover:text-pine-950 hover:bg-parchment-100 transition"
+                                    >
+                                        <i data-lucide="copy" class="w-4 h-4"></i>
+                                    </button>
+                                    <button
+                                        type="button"
+                                        data-edit-letter="${safeText(letter.id)}"
+                                        title="Edytuj list"
+                                        class="edit-letter-item-btn p-2 rounded-xl border border-stone-200 text-stone-600 hover:text-berry-700 hover:bg-berry-600/10 transition"
+                                    >
+                                        <i data-lucide="pencil" class="w-4 h-4"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            ${interestChips ? `<div class="mb-3"><div class="text-[11px] font-bold uppercase tracking-wider text-stone-500 mb-1.5">Zainteresowania</div><div class="flex flex-wrap gap-1.5">${interestChips}</div></div>` : ''}
+                            ${letter.interestsNotes ? `<p class="text-xs sm:text-sm text-stone-700 mb-3.5 leading-relaxed">${safeText(letter.interestsNotes)}</p>` : ''}
+
+                            ${categoryChips ? `<div class="mb-3"><div class="text-[11px] font-bold uppercase tracking-wider text-stone-500 mb-1.5">Ulubione dziedziny prezentów</div><div class="flex flex-wrap gap-1.5">${categoryChips}</div></div>` : ''}
+                            ${letter.categoriesTip ? `<p class="text-xs text-stone-600 mb-4">💡 <span class="italic">${safeText(letter.categoriesTip)}</span></p>` : ''}
+
+                            <div class="mb-4">
+                                <div class="text-[11px] font-bold uppercase tracking-wider text-pine-900 mb-2">O czym marzę w tym roku</div>
+                                ${dreamsBlockHtml}
+                            </div>
+
+                            ${letter.tryNew ? `
+                                <div class="mb-3 p-3 rounded-xl bg-emerald-50/70 border border-emerald-200/80">
+                                    <div class="text-[11px] font-bold uppercase tracking-wider text-emerald-900 mb-0.5">Czego mogę chcieć spróbować</div>
+                                    <p class="text-xs sm:text-sm text-stone-800">${safeText(letter.tryNew)}</p>
+                                </div>
+                            ` : ''}
+
+                            ${letter.avoid ? `
+                                <div class="p-3 rounded-xl bg-rose-50/70 border border-rose-200/80">
+                                    <div class="text-[11px] font-bold uppercase tracking-wider text-rose-900 mb-0.5">Czego lepiej nie kupować</div>
+                                    <p class="text-xs sm:text-sm text-stone-800">${safeText(letter.avoid)}</p>
+                                </div>
+                            ` : ''}
+                        </div>
+
+                        ${secretIdeasHtml}
+                    </article>
+                `;
+            }).join('');
+
+            container.querySelectorAll('.claim-action-btn').forEach((btn) => {
+                btn.addEventListener('click', () => {
+                    toggleClaimItem(
+                        btn.getAttribute('data-claim-letter'),
+                        btn.getAttribute('data-claim-type'),
+                        btn.getAttribute('data-claim-id')
+                    );
+                });
+            });
+
+            container.querySelectorAll('.add-secret-btn').forEach((btn) => {
+                btn.addEventListener('click', () => {
+                    addSecretIdeaToLetter(btn.getAttribute('data-add-secret'));
+                });
+            });
+
+            container.querySelectorAll('.copy-letter-item-btn').forEach((btn) => {
+                btn.addEventListener('click', () => {
+                    const id = btn.getAttribute('data-copy-letter');
+                    const found = groupLetters.find((l) => l.id === id);
+                    if (found) copyToClipboard(formatLetterPlainText(found), `Skopiowano list osoby: ${found.authorName}`);
+                });
+            });
+
+            container.querySelectorAll('.edit-letter-item-btn').forEach((btn) => {
+                btn.addEventListener('click', () => {
+                    const id = btn.getAttribute('data-edit-letter');
+                    if (id) loadLetterForEditing(id);
+                });
+            });
+
+            lucide.createIcons();
+        }
+
+        function renderMyClaimedTab() {
+            const container = getEl('my-claimed-container');
+            const badge = getEl('my-claimed-count');
+
+            if (!currentIdentityName) {
+                if (badge) badge.textContent = '0';
+                if (container) {
+                    container.innerHTML = `
+                        <div class="card-surface rounded-3xl p-8 text-center">
+                            <div class="text-4xl mb-2">🎁</div>
+                            <h2 class="font-serif text-xl font-bold text-pine-950">Najpierw wybierz swoją tożsamość w grupie</h2>
+                            <p class="text-sm text-stone-600 mt-1 max-w-md mx-auto">
+                                Wpisz swoje imię w górnym pasku „Kim jesteś w tej grupie?”, aby zobaczyć zaklepane przez siebie prezenty.
+                            </p>
+                        </div>
+                    `;
+                }
+                return;
+            }
+
+            // Zbierz wszystkie prezenty (z marzeń oraz tajnych pomysłów) zaklepane przez bieżącego użytkownika
+            const groupedByRecipient = new Map();
+            let totalItemsCount = 0;
+
+            groupLetters.forEach((letter) => {
+                if (isCurrentUserAuthor(letter)) return;
+                const recipientName = letter.authorName || 'Osoba z grupy';
+
+                const claimedFromDreams = (letter.dreams || [])
+                    .filter((d) => isClaimedByCurrentUser(d))
+                    .map((d) => ({
+                        letterId: letter.id,
+                        itemType: 'dream',
+                        itemId: d.id,
+                        title: d.title,
+                        details: d.details || '',
+                        isSecret: false
+                    }));
+
+                const claimedFromExtra = (letter.extraIdeas || [])
+                    .filter((x) => isClaimedByCurrentUser(x))
+                    .map((x) => ({
+                        letterId: letter.id,
+                        itemType: 'extra',
+                        itemId: x.id,
+                        title: x.title,
+                        details: '',
+                        isSecret: true
+                    }));
+
+                const combined = [...claimedFromDreams, ...claimedFromExtra];
+                if (combined.length > 0) {
+                    groupedByRecipient.set(letter.id, {
+                        recipientName,
+                        items: combined
+                    });
+                    totalItemsCount += combined.length;
+                }
+            });
+
+            if (badge) badge.textContent = String(totalItemsCount);
+            if (!container) return;
+
+            if (totalItemsCount === 0) {
+                container.innerHTML = `
+                    <div class="card-surface rounded-3xl p-8 text-center">
+                        <div class="text-4xl mb-2">🎀</div>
+                        <h2 class="font-serif text-xl font-bold text-pine-950">Nie masz jeszcze zaklepanych prezentów</h2>
+                        <p class="text-sm text-stone-600 mt-1 max-w-md mx-auto">
+                            Wejdź w zakładkę „Zebrane listy w grupie” i kliknij „Zaklep prezent” przy wybranym pomyśle dla bliskich.
+                        </p>
+                    </div>
+                `;
+                return;
+            }
+
+            const summaryHtml = `
+                <div class="card-surface rounded-3xl p-5 sm:p-6">
+                    <div class="text-xs font-bold uppercase tracking-wider text-berry-700">Twoje rezerwacje w grupie</div>
+                    <h2 class="font-serif text-2xl font-bold text-pine-950 mt-0.5">
+                        Zaklepane prezenty (${totalItemsCount})
+                    </h2>
+                </div>
+            `;
+
+            const groupsHtml = Array.from(groupedByRecipient.values()).map((group) => `
+                <div class="card-surface rounded-3xl p-5 sm:p-6">
+                    <h3 class="font-serif text-xl font-bold text-pine-950 pb-3 mb-4 border-b border-stone-200 flex items-center gap-2">
+                        <span>🎁</span>
+                        <span>Dla: ${safeText(group.recipientName)}</span>
+                    </h3>
+
+                    <div class="space-y-3">
+                        ${group.items.map((entry) => {
+                            const noteKey = `${entry.letterId}::${entry.itemId}`;
+                            const noteVal = privateClaimNotes[noteKey] || '';
+                            return `
+                                <div class="p-4 rounded-2xl bg-parchment-100/80 border border-stone-200">
+                                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5">
+                                        <div>
+                                            <div class="font-semibold text-sm text-pine-950 flex items-center gap-2 flex-wrap">
+                                                <span>${safeText(entry.title)}</span>
+                                                ${entry.isSecret ? '<span class="px-2 py-0.5 rounded-full bg-berry-600/15 text-berry-800 text-[10px] font-bold uppercase">Tajny pomysł</span>' : ''}
+                                            </div>
+                                            ${entry.details ? `
+                                                <div class="flex flex-wrap gap-2 mt-1 text-xs text-stone-600">
+                                                    <span>${safeText(entry.details)}</span>
+                                                </div>
+                                            ` : ''}
+                                        </div>
+
+                                        <button
+                                            type="button"
+                                            data-release-letter="${safeText(entry.letterId)}"
+                                            data-release-type="${safeText(entry.itemType)}"
+                                            data-release-id="${safeText(entry.itemId)}"
+                                            class="release-claim-btn px-3.5 py-2 rounded-xl bg-white hover:bg-rose-50 text-berry-700 border border-berry-600/30 text-xs font-semibold inline-flex items-center gap-1.5 transition shrink-0"
+                                        >
+                                            <i data-lucide="unlock" class="w-3.5 h-3.5"></i>
+                                            <span>Zwolnij rezerwację</span>
+                                        </button>
+                                    </div>
+
+                                    <div class="mt-3">
+                                        <label for="note-${safeText(noteKey)}" class="block text-[11px] font-bold uppercase tracking-wider text-stone-500 mb-1">
+                                            Prywatna notatka (np. gdzie schowany, link do sklepu)
+                                        </label>
+                                        <input
+                                            type="text"
+                                            id="note-${safeText(noteKey)}"
+                                            data-note-key="${safeText(noteKey)}"
+                                            value="${safeText(noteVal)}"
+                                            placeholder="Wpisz prywatną notatkę widoczną tylko dla Ciebie..."
+                                            class="private-note-input w-full px-3 py-2 rounded-xl bg-white border border-stone-300 focus:border-pine-800 outline-none text-xs text-stone-800 transition"
+                                        >
+                                    </div>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                </div>
+            `).join('');
+
+            container.innerHTML = summaryHtml + groupsHtml;
+
+            container.querySelectorAll('.release-claim-btn').forEach((btn) => {
+                btn.addEventListener('click', () => {
+                    toggleClaimItem(
+                        btn.getAttribute('data-release-letter'),
+                        btn.getAttribute('data-release-type'),
+                        btn.getAttribute('data-release-id')
+                    );
+                });
+            });
+
+            container.querySelectorAll('.private-note-input').forEach((input) => {
+                input.addEventListener('input', () => {
+                    const key = input.getAttribute('data-note-key');
+                    if (key) updatePrivateNote(key, input.value);
+                });
+            });
+
+            lucide.createIcons();
+        }
+
+        function renderAll() {
+            renderGroupHeader();
+            renderIdentityBar();
+            renderFormSection();
+            renderGroupLettersTab();
+            renderMyClaimedTab();
+            lucide.createIcons();
+        }
+
+        // ==========================================
+        // 10. DEKORACJA ŚNIEGIEM I PODPIĘCIE ZDARZEŃ
+        // ==========================================
+        function createSnowflakes() {
+            const snowLayer = getEl('snow-layer');
+            if (!snowLayer) return;
+            for (let i = 0; i < 18; i++) {
+                const flake = document.createElement('span');
+                const size = 3 + (i % 4) * 1.5;
+                flake.className = 'snow-dot';
+                flake.style.width = `${size}px`;
+                flake.style.height = `${size}px`;
+                flake.style.left = `${(i * 5.7) % 100}%`;
+                flake.style.animationDuration = `${9 + (i % 6) * 2.2}s`;
+                flake.style.animationDelay = `${-(i * 1.3)}s`;
+                snowLayer.appendChild(flake);
+            }
+        }
+
+        function bindEvents() {
+            // Zakładki
+            document.querySelectorAll('.tab-btn').forEach((btn) => {
+                btn.addEventListener('click', () => {
+                    const tab = btn.getAttribute('data-tab-btn');
+                    if (tab) switchTab(tab);
+                });
+            });
+
+            // Grupa i link
+            const saveGroupBtn = getEl('save-group-name-btn');
+            if (saveGroupBtn) saveGroupBtn.addEventListener('click', saveCurrentGroupName);
+
+            const groupNameInput = getEl('group-name-input');
+            if (groupNameInput) {
+                groupNameInput.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        saveCurrentGroupName();
+                    }
+                });
+            }
+
+            const copyGroupLinkBtn = getEl('copy-group-link-btn');
+            if (copyGroupLinkBtn) {
+                copyGroupLinkBtn.addEventListener('click', () => {
+                    copyToClipboard(getGroupShareLink(currentGroupId), 'Skopiowano link zaproszeniowy dla tej grupy!');
+                });
+            }
+
+            // Modal nowej grupy
+            const openNewGroupBtn = getEl('open-new-group-modal-btn');
+            const closeNewGroupBtn = getEl('close-new-group-modal-btn');
+            const cancelNewGroupBtn = getEl('cancel-new-group-btn');
+            const confirmNewGroupBtn = getEl('confirm-create-group-btn');
+            const newGroupNameInput = getEl('new-group-name-input');
+
+            if (openNewGroupBtn) openNewGroupBtn.addEventListener('click', openNewGroupModal);
+            if (closeNewGroupBtn) closeNewGroupBtn.addEventListener('click', closeNewGroupModal);
+            if (cancelNewGroupBtn) cancelNewGroupBtn.addEventListener('click', closeNewGroupModal);
+            if (confirmNewGroupBtn) confirmNewGroupBtn.addEventListener('click', createNewGroupFromModal);
+            if (newGroupNameInput) {
+                newGroupNameInput.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        createNewGroupFromModal();
+                    }
+                });
+            }
+
+            // Tożsamość w grupie
+            const identityInput = getEl('identity-input');
+            const saveIdentityBtn = getEl('save-identity-btn');
+            if (identityInput && currentIdentityName) {
+                identityInput.value = currentIdentityName;
+            }
+            if (saveIdentityBtn) {
+                saveIdentityBtn.addEventListener('click', () => {
+                    setUserIdentity(identityInput ? identityInput.value : '');
+                });
+            }
+            if (identityInput) {
+                identityInput.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        setUserIdentity(identityInput.value);
+                    }
+                });
+            }
+
+            // Formularz listu
+            const addCustomCatBtn = getEl('add-custom-category-btn');
+            const customCatInput = getEl('custom-category-input');
+            if (addCustomCatBtn) addCustomCatBtn.addEventListener('click', addCustomCategory);
+            if (customCatInput) {
+                customCatInput.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        addCustomCategory();
+                    }
+                });
+            }
+
+            const addDreamBtn = getEl('add-dream-btn');
+            const dreamTitleInput = getEl('dream-title-input');
+            const dreamDetailsInput = getEl('dream-details-input');
+            if (addDreamBtn) addDreamBtn.addEventListener('click', addDreamFromInputs);
+            [dreamTitleInput, dreamDetailsInput].forEach((inp) => {
+                if (inp) {
+                    inp.addEventListener('keydown', (e) => {
+                        if (e.key === 'Enter') {
+                            e.preventDefault();
+                            addDreamFromInputs();
+                        }
+                    });
+                }
+            });
+
+            const clearFormBtn = getEl('clear-form-btn');
+            if (clearFormBtn) clearFormBtn.addEventListener('click', resetLetterForm);
+
+            const copyLetterTextBtn = getEl('copy-letter-text-btn');
+            if (copyLetterTextBtn) {
+                copyLetterTextBtn.addEventListener('click', () => {
+                    const draft = buildLetterPayloadFromForm();
+                    if (!draft.authorName) draft.authorName = currentIdentityName || 'Ja';
+                    copyToClipboard(formatLetterPlainText(draft), 'Skopiowano treść listu do schowka!');
+                });
+            }
+
+            const wishForm = getEl('wish-letter-form');
+            if (wishForm) {
+                wishForm.addEventListener('submit', handleSaveLetterSubmit);
+            }
+        }
+
+        // Start aplikacji po załadowaniu DOM
+        document.addEventListener('DOMContentLoaded', () => {
+            createSnowflakes();
+            bindEvents();
+            switchTab('write');
+            renderAll();
+            initFirebaseAndGroup(currentGroupId);
+        });
+    </script>
+</body>
+</html>
